@@ -144,7 +144,27 @@ python3 .claude/skills/monthly-roundup/build.py \
   --out    roundups/<YYYY-MM>.html
 ```
 
-## 5. Publish
+## 5. Make the PDF
+
+```bash
+npm install            # once per checkout
+node .claude/skills/monthly-roundup/check_fit.js roundups/<YYYY-MM>.html
+node .claude/skills/monthly-roundup/to_pdf.js \
+  --in roundups/<YYYY-MM>.html --out roundups/<YYYY-MM>.pdf
+```
+
+The PDF centres the 5×7in page on US Letter with corner crop marks to trim
+against. Always run `check_fit.js` first — it renders with the real
+typefaces, embedded from `node_modules`, because Google Fonts is unreachable
+here and the fallback serif has different metrics: a page can measure clean
+under the fallback and still clip in print.
+
+Then **look at the PDF**, don't just trust the checker — render a page to an
+image (`pypdfium2`) and read the bottom of it. Chromium's PDF layout pass
+resolves flexbox differently from its screen layout, so the browser can report
+a clean page that the PDF still clips.
+
+## 6. Publish
 
 Publish `roundups/<YYYY-MM>.html` with the Artifact tool — a **new** artifact
 each month, so every month keeps its own link. Favicon `📔`, and a description
@@ -154,12 +174,13 @@ Each month is a fresh file path, so never pass `url`. Only pass `url` when
 correcting a month already published in an earlier session — find it with
 `action: "list"`.
 
-## 6. Hand it back
+## 7. Hand it back
 
 Tell them what you looked up and anything you had to judge: a book you couldn't
 find a rating for, a caption you trimmed, a photo slot that came back empty.
-Remind them to print at **actual size** — scaling to fit the paper is what makes
-a 5×7 page come out 4×6.
+Send the PDF with `SendUserFile`. Remind them to print at **actual size** —
+"fit to page" is what turns a 5×7 page into a 4×6 one, and it moves the crop
+marks off true.
 
 ## Checks worth making before publishing
 
@@ -177,8 +198,12 @@ the design needs to change, change `template.html`; every future month picks it
 up. Two things there are load-bearing:
 
 - The page is fixed at 480×672px, which is 5×7in at 96dpi, and it must not
-  overflow. After a layout change, check `scrollHeight === clientHeight` on
-  `#page`.
+  overflow. Verify with `check_fit.js` and by looking at the rendered PDF —
+  `scrollHeight === clientHeight` on `#page` proves nothing here, because the
+  page has a fixed height and so can never report less.
+- `sizePhotos()` measures the leftover space once and pins the photo height in
+  pixels. Don't replace it with `flex: 1`: flex slack is distributed
+  differently in Chromium's PDF pass, which silently clipped the page.
 - The work bullets are real bullet-journal notation: `×` for done, `>` for a
   task migrating to next month. The carryover is deliberately marked as
   migrated, and next month's form opens with it pre-filled.

@@ -1,0 +1,14 @@
+{
+  "name": "journal-roundup",
+  "private": true,
+  "description": "Tooling for the monthly bullet-journal roundup",
+  "scripts": {
+    "pdf": "node .claude/skills/monthly-roundup/to_pdf.js"
+  },
+  "devDependencies": {
+    "@fontsource/caveat": "^5.2.5",
+    "@fontsource/courier-prime": "^5.2.5",
+    "@fontsource/crimson-pro": "^5.2.5",
+    "playwright-core": "^1.63.0"
+  }
+}

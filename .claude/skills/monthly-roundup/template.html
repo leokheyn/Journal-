@@ -188,14 +188,15 @@ const DATA = {
   /* ---------- bottom row ---------- */
   /* the bottom row takes whatever height is left, and the photos absorb it —
      a quiet month grows the pictures instead of leaving a hole */
-  .bottom{ display:grid; grid-template-columns:1.25fr 1fr; gap:14px; flex:1; min-height:0; }
-  .col{ display:flex; flex-direction:column; gap:5px; min-width:0; min-height:0; }
+  .bottom{ display:grid; grid-template-columns:1.25fr 1fr; gap:14px; }
+  .col{ display:flex; flex-direction:column; gap:5px; min-width:0; }
 
+  /* height is set in script, not by flex — see sizePhotos() */
   .photos{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;
-           align-items:stretch; margin-top:2px; flex:1 1 auto; min-height:124px; }
+           align-items:stretch; margin-top:2px; }
   .polaroid{ position:relative; background:#FFFDF8; padding:3.5px 3.5px 0;
              box-shadow:0 1px 2px rgba(40,50,59,.2);
-             display:flex; flex-direction:column; min-height:0; }
+             display:flex; flex-direction:column; min-height:0; height:100%; }
   .polaroid:nth-child(1){ transform:rotate(-1.7deg); }
   .polaroid:nth-child(2){ transform:rotate(1.4deg); }
   .polaroid::before{ content:""; position:absolute; top:-5px; left:50%; width:34px; height:11px;
@@ -514,6 +515,50 @@ const DATA = {
       <span class="stamp">${esc(DATA.month)} ${esc(DATA.year)}</span>
     </div>
   `;
+
+  /* Give the photos exactly the height the rest of the page leaves over, as a
+     pixel value, instead of letting flex distribute the slack. Chromium's PDF
+     layout resolves flex differently from its screen layout, so a page that
+     measured clean in the browser could still clip when printed. Measuring
+     once here and pinning the result makes both paths agree. */
+  (function sizePhotos(){
+    const pageEl = document.getElementById("page");
+    const photos = pageEl.querySelector(".photos");
+    if (!photos) return;
+    const foot = pageEl.querySelector(".foot");
+    const own = photos.closest(".col");
+    const cols = Array.prototype.slice.call(pageEl.querySelectorAll(".bottom .col"));
+
+    // Two things hide the free space during measurement. The footer's
+    // margin-top:auto swallows it, and the page's height is fixed, so
+    // scrollHeight never drops below clientHeight — the slack has to be read
+    // off the footer's own position instead. The columns also stretch to each
+    // other, so pin them to their natural heights while measuring.
+    if (foot) foot.style.marginTop = "0px";
+    cols.forEach(c => { c.style.alignSelf = "start"; });
+    photos.style.overflow = "hidden";     // so the collapsed children measure as 0
+    photos.style.height = "0px";
+
+    const padBottom = parseFloat(getComputedStyle(pageEl).paddingBottom) || 0;
+    const usable = pageEl.clientHeight - padBottom;
+    const bottomOf = () => foot ? foot.offsetTop + foot.offsetHeight : usable;
+
+    // slack at the foot, plus the headroom this column has before it overtakes
+    // its neighbour — growing into that costs nothing. offsetHeight, not
+    // getBoundingClientRect: the stage is transform-scaled.
+    let sibling = 0;
+    cols.forEach(c => { if (c !== own) sibling = Math.max(sibling, c.offsetHeight); });
+    const free = (usable - bottomOf()) + Math.max(0, sibling - own.offsetHeight);
+    photos.style.height = Math.max(88, Math.min(215, free - 2)) + "px";
+
+    // and if that overshot, hand back exactly what spilled
+    const over = bottomOf() - usable;
+    if (over > 0) photos.style.height = Math.max(60, photos.offsetHeight - over) + "px";
+
+    photos.style.overflow = "";           // the washi tape overhangs the frame
+    cols.forEach(c => { c.style.alignSelf = ""; });
+    if (foot) foot.style.marginTop = "";
+  })();
 
   const title = `${DATA.month} ${DATA.year} Roundup`;
   document.title = title;
