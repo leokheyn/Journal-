@@ -1,0 +1,465 @@
+<title>September 2026 Roundup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Courier+Prime:wght@400;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+
+<script>
+/* ============================================================================
+   THE ONLY BLOCK TO EDIT.  Replace the values, change nothing below it.
+   Numbers that can be derived (book count, total pages, averages) are
+   computed by the page — do not pre-compute them here.
+   ========================================================================= */
+const DATA = {
+  sample: true,                 // set false for a real month — hides the "sample" margin note
+  month: "September",
+  year: 2026,
+  daysInMonth: 30,
+
+  reading: {
+    // one entry per book finished this month
+    books: [
+      { title: "Piranesi",                 author: "Susanna Clarke",  pages: 245, goodreads: 4.25, mine: 5 },
+      { title: "The Overstory",            author: "Richard Powers",  pages: 502, goodreads: 4.18, mine: 4 },
+      { title: "Klara and the Sun",        author: "Kazuo Ishiguro",  pages: 303, goodreads: 3.71, mine: 3 },
+      { title: "A Psalm for the Wild-Built",author: "Becky Chambers", pages: 147, goodreads: 4.19, mine: 4 }
+    ],
+    favorite:      { title: "Piranesi",          note: "Read the last forty pages twice." },
+    leastFavorite: { title: "Klara and the Sun", note: "Beautiful, but kept me at arm's length." },
+    quote: { text: "The Beauty of the House is immeasurable; its Kindness infinite.", book: "Piranesi" }
+  },
+
+  health: {
+    steps: 248410,
+    stepsEquivalent: "124 miles — Boston to New York City",   // you supply this line
+    hoursSlept: 186,
+    nightsOver6: 22,
+    gymWorkouts: 12
+  },
+
+  family: {
+    lilahSkill: "Started naming colors — and she is right about half the time.",
+    lilahPhoto:  { src: "", caption: "Puddle, discovered" },
+    activity:    { title: "Apple picking at Honeypot Hill", caption: "One apple picked, six eaten" },
+    activityPhoto: { src: "" },
+    celebration: "Lilah's first full week at daycare with no tears at drop-off."
+  },
+
+  work: {
+    accomplishment: "Shipped the reporting rewrite two weeks early.",
+    carryover: "Write up the on-call handbook — moved from August, moving again."
+  }
+};
+/* ====================== end of the editable block ======================= */
+</script>
+
+<style>
+  /* ---- The desk the page sits on: follows the viewer's theme ---- */
+  :root{
+    --desk:#E7E3DA; --desk-edge:#D2CCBF; --chrome-ink:#4A4740; --chrome-dim:#7C776C;
+    --btn-bg:#FBFAF7; --btn-line:#C6BFB0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --desk:#23252A; --desk-edge:#171920; --chrome-ink:#CBC7BC;
+      --chrome-dim:#8B877D; --btn-bg:#2E3138; --btn-line:#454951; }
+  }
+  :root[data-theme="dark"]{ --desk:#23252A; --desk-edge:#171920; --chrome-ink:#CBC7BC;
+    --chrome-dim:#8B877D; --btn-bg:#2E3138; --btn-line:#454951; }
+
+  /* ---- The paper itself: one committed world, identical in every theme ---- */
+  :root{
+    --paper:#F8F5EC;        /* ivory journal stock          */
+    --dot:#CFC6B0;          /* the dot grid                 */
+    --ink:#28323B;          /* dark blue-black fountain pen */
+    --ink-soft:#6B7680;     /* the same pen, lighter hand   */
+    --ink-faint:#A6ADB2;
+    --teal:#2F6F6B;         /* pen no.2                     */
+    --marigold:#D9A441;     /* the highlighter              */
+    --clay:#B0564A;         /* used exactly twice           */
+  }
+
+  body{ background:var(--desk); color:var(--chrome-ink);
+        font-family:"Courier Prime", ui-monospace, monospace;
+        display:flex; flex-direction:column; align-items:center;
+        padding-block:20px 40px; padding-left:16px; padding-right:16px; }
+
+  /* ---------- screen-only chrome ---------- */
+  .chrome{ width:100%; max-width:720px; display:flex; align-items:baseline;
+           justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .chrome h1{ margin:0; font-family:"Caveat",cursive; font-weight:600; font-size:22px;
+              letter-spacing:.01em; color:var(--chrome-ink); }
+  .chrome .hint{ font-size:11px; color:var(--chrome-dim); letter-spacing:.02em; }
+  .print-btn{ font-family:"Courier Prime",monospace; font-size:11px; font-weight:700;
+              text-transform:uppercase; letter-spacing:.12em; color:var(--chrome-ink);
+              background:var(--btn-bg); border:1px solid var(--btn-line); border-radius:2px;
+              padding:7px 14px; cursor:pointer; }
+  .print-btn:hover{ border-color:var(--chrome-dim); }
+  .print-btn:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
+  .stage-wrap{ width:100%; display:flex; justify-content:center; }
+  .stage{ transform-origin:top center; }
+
+  /* ---------- the page: 5in x 7in ---------- */
+  @page{ size:5in 7in; margin:0; }
+  .page{
+    width:480px; height:672px;            /* 5in x 7in at 96dpi */
+    box-sizing:border-box; padding:26px 26px 20px;
+    background:var(--paper); color:var(--ink);
+    background-image:radial-gradient(var(--dot) 0.7px, transparent 0.8px);
+    background-size:11.34px 11.34px;      /* a true 3mm dot grid */
+    background-position:8px 8px;
+    box-shadow:0 1px 2px rgba(0,0,0,.14), 0 10px 30px rgba(0,0,0,.18);
+    display:flex; flex-direction:column; gap:9px; overflow:hidden; position:relative;
+  }
+  /* the UA's own margins on blockquote/figure would indent the quote and
+     unbalance the photo columns — clear them before anything else */
+  .page blockquote, .page figure, .page figcaption, .page p{ margin:0; }
+
+  /* ---------- masthead ---------- */
+  .masthead{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+  .masthead .mo{ font-family:"Caveat",cursive; font-weight:700; font-size:42px; line-height:.86;
+                 letter-spacing:.005em; color:var(--ink); }
+  .masthead .yr{ font-size:10px; font-weight:700; letter-spacing:.3em; color:var(--ink-soft);
+                 padding-bottom:3px; }
+  .masthead .kicker{ font-size:7.5px; font-weight:700; text-transform:uppercase;
+                     letter-spacing:.26em; color:var(--teal); padding-bottom:5px; text-align:right;
+                     line-height:1.5; }
+
+  /* ---------- sections ---------- */
+  .sec{ display:flex; flex-direction:column; gap:5px; }
+  .sec-head{ display:flex; align-items:center; gap:6px; }
+  .sec-head svg{ flex:none; }
+  .sec-head .name{ font-size:8.5px; font-weight:700; text-transform:uppercase;
+                   letter-spacing:.2em; color:var(--ink); }
+  .sec-head .rule{ flex:1; height:1px; background:var(--ink-faint); opacity:.55; }
+
+  /* ---------- reading ---------- */
+  .read-top{ display:flex; align-items:center; gap:12px; }
+  .spines{ flex:none; }
+  .count{ display:flex; align-items:baseline; gap:4px; }
+  .count .n{ font-family:"Caveat",cursive; font-weight:700; font-size:30px; line-height:1;
+             color:var(--ink); font-variant-numeric:tabular-nums; }
+  .count .u{ font-size:7.5px; text-transform:uppercase; letter-spacing:.14em; color:var(--ink-soft); }
+  .pages{ flex:1; display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .pages .row{ display:flex; align-items:baseline; gap:5px; }
+  .pages .big{ font-family:"Caveat",cursive; font-weight:700; font-size:20px; line-height:1;
+               color:var(--teal); font-variant-numeric:tabular-nums; }
+  .pages .lab{ font-size:7px; text-transform:uppercase; letter-spacing:.14em; color:var(--ink-soft); }
+
+  .scores{ display:flex; gap:16px; align-items:center; }
+  .score{ display:flex; align-items:center; gap:5px; }
+  .score .who{ font-size:7px; text-transform:uppercase; letter-spacing:.13em; color:var(--ink-soft); }
+  .score .val{ font-family:"Caveat",cursive; font-size:16px; font-weight:700; line-height:1;
+               font-variant-numeric:tabular-nums; }
+
+  .picks{ display:flex; flex-direction:column; gap:3px; }
+  .pick{ display:flex; gap:5px; align-items:flex-start; font-family:"Crimson Pro",Georgia,serif;
+         font-size:9.5px; line-height:1.34; }
+  .pick .mk{ flex:none; font-family:"Courier Prime",monospace; font-size:9px; font-weight:700;
+             line-height:1.42; width:9px; text-align:center; }
+  .pick b{ font-weight:600; }
+  .pick i{ color:var(--ink-soft); font-style:italic; }
+
+  .quote{ position:relative; border-left:2px solid var(--marigold); padding:2px 4px 2px 8px;
+          font-family:"Crimson Pro",Georgia,serif; font-style:italic; font-size:11px;
+          line-height:1.32; color:var(--ink); }
+  .quote cite{ display:block; font-style:normal; font-family:"Courier Prime",monospace;
+               font-size:7px; letter-spacing:.13em; text-transform:uppercase;
+               color:var(--ink-soft); margin-top:2px; }
+
+  /* ---------- health ---------- */
+  .steps-row{ display:flex; align-items:center; gap:9px; }
+  .steps-row .n{ font-family:"Caveat",cursive; font-weight:700; font-size:28px; line-height:1;
+                 color:var(--ink); font-variant-numeric:tabular-nums; }
+  .steps-row .u{ font-size:7px; text-transform:uppercase; letter-spacing:.14em;
+                 color:var(--ink-soft); }
+  .equiv{ font-family:"Caveat",cursive; font-size:14px; color:var(--teal); line-height:1.1; }
+  .h-grid{ display:grid; grid-template-columns:1.15fr 1fr; gap:8px 14px; align-items:start; }
+  .hstat{ display:flex; flex-direction:column; gap:3px; }
+  .hstat .top{ display:flex; align-items:baseline; gap:4px; }
+  .hstat .n{ font-family:"Caveat",cursive; font-weight:700; font-size:19px; line-height:1;
+             font-variant-numeric:tabular-nums; }
+  .hstat .u{ font-size:7px; text-transform:uppercase; letter-spacing:.13em; color:var(--ink-soft); }
+  .nights{ display:flex; flex-wrap:wrap; gap:2.6px; max-width:150px; }
+  .nights i{ width:5.4px; height:5.4px; border-radius:50%; display:block;
+             border:1px solid var(--teal); }
+  .nights i.on{ background:var(--teal); }
+
+  /* ---------- bottom row ---------- */
+  .bottom{ display:grid; grid-template-columns:1.32fr 1fr; gap:14px; align-items:start; }
+  .col{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+
+  .photos{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;
+           align-items:start; margin-top:2px; }
+  .polaroid{ position:relative; background:#FFFDF8; padding:3.5px 3.5px 0;
+             box-shadow:0 1px 2px rgba(40,50,59,.2); }
+  .polaroid:nth-child(1){ transform:rotate(-1.7deg); }
+  .polaroid:nth-child(2){ transform:rotate(1.4deg); }
+  .polaroid::before{ content:""; position:absolute; top:-5px; left:50%; width:34px; height:11px;
+                     transform:translateX(-50%) rotate(-3deg);
+                     background:rgba(217,164,65,.42); border-left:1px solid rgba(217,164,65,.6);
+                     border-right:1px solid rgba(217,164,65,.6); }
+  .polaroid .frame{ width:100%; aspect-ratio:4/5; max-width:100%; display:block;
+                    object-fit:cover; background:#EDE8DC; }
+  .polaroid figcaption{ font-family:"Caveat",cursive; font-size:11px; line-height:1.14;
+                        text-align:center; color:var(--ink); padding:3px 2px 5px;
+                        min-height:15px; overflow:hidden; }
+  .noshot{ width:100%; aspect-ratio:4/5; display:flex; align-items:center; justify-content:center;
+           border:1px dashed var(--ink-faint); background:transparent; }
+
+  .fline{ font-family:"Crimson Pro",Georgia,serif; font-size:9.5px; line-height:1.34; }
+  .fline .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
+               text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
+               display:block; margin-bottom:1px; }
+  .celebrate{ display:flex; gap:5px; align-items:flex-start; margin-top:3px;
+              border-top:1px dashed var(--ink-faint); padding-top:5px; }
+  .celebrate .txt{ font-family:"Caveat",cursive; font-size:13px; line-height:1.2; color:var(--clay); }
+
+  .wentry{ display:flex; gap:6px; align-items:flex-start; }
+  .wentry .bullet{ flex:none; font-family:"Courier Prime",monospace; font-size:11px;
+                   font-weight:700; line-height:1.22; width:10px; text-align:center; }
+  .wentry .body{ font-family:"Crimson Pro",Georgia,serif; font-size:9.5px; line-height:1.34; }
+  .wentry .body .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
+                      text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
+                      display:block; margin-bottom:1px; }
+  /* the page's own footer: absorbs whatever vertical slack the month leaves */
+  .foot{ margin-top:auto; border-top:1px dashed var(--ink-faint); padding-top:5px;
+         display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+         font-size:6.8px; color:var(--ink-soft); letter-spacing:.1em; }
+  .foot b{ color:var(--ink); font-weight:700; }
+  .foot .stamp{ text-transform:uppercase; letter-spacing:.22em; color:var(--ink-faint); }
+
+  .sample-note{ position:absolute; right:-2px; top:196px; transform:rotate(90deg);
+                transform-origin:right top; font-family:"Caveat",cursive; font-size:11px;
+                color:var(--clay); opacity:.85; white-space:nowrap; }
+
+  /* ---------- print ---------- */
+  @media print{
+    body{ background:#fff; padding:0; display:block; }
+    .chrome, .sample-note{ display:none !important; }
+    .stage{ transform:none !important; }
+    .stage-wrap{ display:block; }
+    .page{ box-shadow:none; margin:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<div class="chrome">
+  <div>
+    <h1 id="chrome-title">Monthly Roundup</h1>
+    <div class="hint">5 &times; 7 in &middot; print at actual size, trim, paste in</div>
+  </div>
+  <button class="print-btn" id="print-btn" type="button">Print</button>
+</div>
+
+<div class="stage-wrap" id="stage-wrap">
+  <div class="stage" id="stage">
+    <div class="page" id="page"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  const num = n => Number(n || 0).toLocaleString("en-US");
+
+  /* ---- derived reading numbers: computed here, never hand-entered ---- */
+  const books      = (DATA.reading && DATA.reading.books) || [];
+  const nBooks     = books.length;
+  const totalPages = books.reduce((s,b) => s + (Number(b.pages) || 0), 0);
+  const avg = (key) => {
+    const v = books.map(b => Number(b[key])).filter(n => !isNaN(n) && n > 0);
+    return v.length ? v.reduce((a,b) => a+b, 0) / v.length : 0;
+  };
+  const avgGR   = avg("goodreads");
+  const avgMine = avg("mine");
+
+  /* ---- small hand-drawn parts ---- */
+  const STAR = "6,1 7.29,4.42 10.95,4.59 8.09,6.88 9.06,10.41 6,8.4 2.94,10.41 3.91,6.88 1.05,4.59 4.71,4.42";
+  let uid = 0;
+  function stars(rating, color){
+    const id = "clip" + (++uid);
+    const w  = Math.max(0, Math.min(5, rating)) / 5 * 62;
+    const row = [0,1,2,3,4].map(i =>
+      `<polygon points="${STAR}" transform="translate(${i*12.5},0)"/>`).join("");
+    return `<svg viewBox="0 0 62 12" width="62" height="12" role="img" aria-label="${rating.toFixed(2)} of 5">
+      <defs><clipPath id="${id}"><rect x="0" y="0" width="${w.toFixed(2)}" height="12"/></clipPath>
+      <g id="g${id}">${row}</g></defs>
+      <use href="#g${id}" fill="none" stroke="${color}" stroke-width="0.9" opacity="0.55"/>
+      <use href="#g${id}" fill="${color}" clip-path="url(#${id})"/>
+    </svg>`;
+  }
+  /* a shelf of spines, one per book, height tracking its page count */
+  function spines(list){
+    const pal = ["var(--ink)","var(--teal)","var(--marigold)","var(--clay)"];
+    const maxP = Math.max(120, ...list.map(b => Number(b.pages) || 0));
+    const W = 8, G = 2.6, H = 36;
+    const w = Math.max(W, list.length * (W+G) - G);
+    const body = list.map((b,i) => {
+      const h = 17 + Math.round((Math.min(maxP, Number(b.pages)||0) / maxP) * 17);
+      const x = i * (W+G), y = H - h, c = pal[i % pal.length];
+      return `<g><rect x="${x}" y="${y}" width="${W}" height="${h}" rx="1" fill="${c}" opacity="0.9"/>
+        <rect x="${x+1.6}" y="${y+3.2}" width="${W-3.2}" height="0.9" fill="var(--paper)" opacity="0.75"/>
+        <rect x="${x+1.6}" y="${y+5.6}" width="${W-3.2}" height="0.9" fill="var(--paper)" opacity="0.55"/>
+        <rect x="${x+1.6}" y="${y+h-4}" width="${W-3.2}" height="0.9" fill="var(--paper)" opacity="0.6"/></g>`;
+    }).join("");
+    return `<svg class="spines" viewBox="0 0 ${w} ${H}" width="${w}" height="${H}" aria-hidden="true">
+      ${body}<line x1="0" y1="${H-0.4}" x2="${w}" y2="${H-0.4}" stroke="var(--ink)" stroke-width="0.9"/></svg>`;
+  }
+  /* tally marks, five to a gate */
+  function tally(n){
+    const gates = Math.floor(n/5), rest = n % 5, GW = 15;
+    const w = Math.max(GW, gates*GW + (rest ? rest*3 + 4 : 0));
+    let out = "", x = 0;
+    for (let g=0; g<gates; g++){
+      for (let i=0;i<4;i++) out += `<line x1="${x+i*3}" y1="1" x2="${x+i*3}" y2="12"/>`;
+      out += `<line x1="${x-1}" y1="12" x2="${x+10}" y2="1"/>`;
+      x += GW;
+    }
+    for (let i=0;i<rest;i++) out += `<line x1="${x+i*3}" y1="1" x2="${x+i*3}" y2="12"/>`;
+    return `<svg viewBox="0 0 ${w} 13" width="${w}" height="13" aria-hidden="true"
+      stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round">${out}</svg>`;
+  }
+  /* a walked trail with a bootprint at the end */
+  const trail = `<svg viewBox="0 0 96 18" width="96" height="18" aria-hidden="true" fill="none">
+      <path d="M1,13 C14,3 26,17 39,9 C52,1 62,15 74,9" stroke="var(--ink-faint)"
+            stroke-width="1.1" stroke-linecap="round" stroke-dasharray="1.5 3.6"/>
+      <g fill="var(--teal)" opacity="0.85">
+        <ellipse cx="82" cy="8.4" rx="2.5" ry="4.2" transform="rotate(14 82 8.4)"/>
+        <ellipse cx="88.5" cy="12" rx="2.5" ry="4.2" transform="rotate(14 88.5 12)"/>
+      </g></svg>`;
+
+  const ICON = {
+    book:`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--teal)"
+      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.2C6.6 3 4.6 2.6 2.4 2.8v9.4c2.2-.2 4.2.2 5.6 1.4 1.4-1.2 3.4-1.6 5.6-1.4V2.8C11.4 2.6 9.4 3 8 4.2z"/><path d="M8 4.2v9.4"/></svg>`,
+    shoe:`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--teal)"
+      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11.6V5.2l2.6.8 1.6 2 3 .9 4.4 1.5c.9.3 1.2 1.2.5 1.7-.5.4-1.3.5-2 .5H3.2c-.7 0-1.2-.4-1.2-1z"/><path d="M4.6 6 6 4.4"/></svg>`,
+    house:`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--teal)"
+      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 7.4 8 2.6l5.8 4.8"/><path d="M3.6 8.5v4.9h8.8V8.5"/><path d="M6.6 13.4v-3.2h2.8v3.2"/></svg>`,
+    case:`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--teal)"
+      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5.2" width="12" height="8.2" rx="1.2"/><path d="M6 5.2V3.9c0-.5.4-.9.9-.9h2.2c.5 0 .9.4.9.9v1.3"/><path d="M2 8.8h12"/></svg>`,
+    star:`<svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><polygon points="7,1.2 8.6,5.1 12.8,5.4 9.6,8.1 10.6,12.2 7,9.9 3.4,12.2 4.4,8.1 1.2,5.4 5.4,5.1" fill="var(--clay)" opacity="0.9"/></svg>`
+  };
+  function photo(src, caption, alt){
+    const inner = src
+      ? `<img class="frame" src="${esc(src)}" alt="${esc(alt)}">`
+      : `<div class="noshot" role="img" aria-label="no photo"><svg viewBox="0 0 24 24" width="19" height="19"
+           fill="none" stroke="var(--ink-faint)" stroke-width="1.3" stroke-linecap="round"
+           stroke-linejoin="round"><path d="M3 8.5h3.4L8 6.3h8l1.6 2.2H21v10H3z"/><circle cx="12" cy="13.2" r="3.1"/></svg></div>`;
+    return `<figure class="polaroid">${inner}<figcaption>${esc(caption || "")}</figcaption></figure>`;
+  }
+
+  /* ---- compose the page ---- */
+  const r = DATA.reading || {}, h = DATA.health || {},
+        f = DATA.family  || {}, w = DATA.work   || {};
+  const days   = Number(DATA.daysInMonth) || 30;
+  const nights = Math.max(0, Math.min(days, Number(h.nightsOver6) || 0));
+  const dots   = Array.from({length: days}, (_,i) =>
+    `<i class="${i < nights ? "on" : ""}"></i>`).join("");
+
+  const head = (icon, name) =>
+    `<div class="sec-head">${icon}<span class="name">${name}</span><span class="rule"></span></div>`;
+
+  document.getElementById("page").innerHTML = `
+    ${DATA.sample ? `<div class="sample-note">sample month — yours will be real</div>` : ""}
+
+    <div class="masthead">
+      <div style="display:flex;align-items:flex-end;gap:7px">
+        <div class="mo">${esc(DATA.month)}</div>
+        <div class="yr">${esc(DATA.year)}</div>
+      </div>
+      <div class="kicker">Monthly<br>Roundup</div>
+    </div>
+
+    <section class="sec">
+      ${head(ICON.book, "Reading")}
+      <div class="read-top">
+        ${spines(books)}
+        <div class="count"><span class="n">${nBooks}</span><span class="u">${nBooks === 1 ? "book" : "books"}</span></div>
+        <div class="pages">
+          <div class="row"><span class="big">${num(totalPages)}</span><span class="lab">pages</span></div>
+          <div class="scores">
+            <span class="score"><span class="who">Goodreads</span>${stars(avgGR,"var(--ink-soft)")}<span class="val" style="color:var(--ink-soft)">${avgGR.toFixed(2)}</span></span>
+            <span class="score"><span class="who">Mine</span>${stars(avgMine,"var(--marigold)")}<span class="val" style="color:var(--marigold)">${avgMine.toFixed(2)}</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="picks">
+        <div class="pick"><span class="mk" style="color:var(--clay)">&#9829;</span>
+          <span><b>${esc((r.favorite||{}).title)}</b>${(r.favorite||{}).note ? ` &mdash; <i>${esc(r.favorite.note)}</i>` : ""}</span></div>
+        <div class="pick"><span class="mk" style="color:var(--ink-faint)">&times;</span>
+          <span><b>${esc((r.leastFavorite||{}).title)}</b>${(r.leastFavorite||{}).note ? ` &mdash; <i>${esc(r.leastFavorite.note)}</i>` : ""}</span></div>
+      </div>
+      ${(r.quote && r.quote.text) ? `<blockquote class="quote">&ldquo;${esc(r.quote.text)}&rdquo;
+        <cite>${esc(r.quote.book)}</cite></blockquote>` : ""}
+    </section>
+
+    <section class="sec">
+      ${head(ICON.shoe, "Health")}
+      <div class="steps-row">
+        ${trail}
+        <div>
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <span class="n">${num(h.steps)}</span><span class="u">steps</span>
+          </div>
+          <div class="equiv">&#8776; ${esc(h.stepsEquivalent)}</div>
+        </div>
+      </div>
+      <div class="h-grid">
+        <div class="hstat">
+          <div class="top"><span class="n" style="color:var(--teal)">${nights}</span>
+            <span class="u">nights over 6 hrs &middot; of ${days}</span></div>
+          <div class="nights" role="img" aria-label="${nights} of ${days} nights over six hours">${dots}</div>
+        </div>
+        <div class="hstat" style="gap:7px">
+          <div class="top"><span class="n">${num(h.hoursSlept)}</span><span class="u">hours slept</span></div>
+          <div class="top" style="gap:6px"><span class="n" style="color:var(--ink)">${num(h.gymWorkouts)}</span>
+            <span class="u">workouts</span>${tally(Number(h.gymWorkouts)||0)}</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="bottom">
+      <section class="sec col">
+        ${head(ICON.house, "Family")}
+        <div class="photos">
+          ${photo((f.lilahPhoto||{}).src, (f.lilahPhoto||{}).caption, "Favourite photo of Lilah this month")}
+          ${photo((f.activityPhoto||{}).src, (f.activity||{}).caption, "Favourite family activity this month")}
+        </div>
+        <div class="fline"><span class="lab">New this month</span>${esc(f.lilahSkill)}</div>
+        <div class="fline"><span class="lab">Best day out</span>${esc((f.activity||{}).title)}</div>
+        ${f.celebration ? `<div class="celebrate">${ICON.star}<span class="txt">${esc(f.celebration)}</span></div>` : ""}
+      </section>
+
+      <section class="sec col">
+        ${head(ICON.case, "Work")}
+        <div class="wentry"><span class="bullet" style="color:var(--teal)">&times;</span>
+          <span class="body"><span class="lab">Landed it</span>${esc(w.accomplishment)}</span></div>
+        <div class="wentry"><span class="bullet" style="color:var(--clay)">&gt;</span>
+          <span class="body"><span class="lab">Migrates forward</span>${esc(w.carryover)}</span></div>
+      </section>
+    </div>
+
+    <div class="foot">
+      <span><b>&times;</b> done &nbsp;&nbsp; <b>&gt;</b> carried to next month</span>
+      <span class="stamp">${esc(DATA.month)} ${esc(DATA.year)}</span>
+    </div>
+  `;
+
+  const title = `${DATA.month} ${DATA.year} Roundup`;
+  document.title = title;
+  document.getElementById("chrome-title").textContent = title;
+
+  /* fit the fixed 5x7 page to whatever is looking at it */
+  const stage = document.getElementById("stage"), wrap = document.getElementById("stage-wrap");
+  function fit(){
+    const s = Math.max(0.42, Math.min(1.5, (wrap.clientWidth) / 480));
+    stage.style.transform = "scale(" + s + ")";
+    wrap.style.height = Math.ceil(672 * s) + "px";
+  }
+  fit();
+  addEventListener("resize", fit);
+  document.getElementById("print-btn").addEventListener("click", () => window.print());
+})();
+</script>

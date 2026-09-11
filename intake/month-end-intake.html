@@ -1,0 +1,656 @@
+<title>Month-End Intake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Courier+Prime:wght@400;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+
+<style>
+  /* ---------------- tokens: the same two pens, on screen ---------------- */
+  :root{
+    --paper:#F8F5EC; --card:#FCFAF3; --dot:#D5CCB6;
+    --ink:#28323B; --ink-soft:#65707A; --ink-faint:#A29C8E;
+    --line:#CFC6B0; --line-strong:#A79E88;
+    --teal:#2F6F6B; --teal-lift:#E4EEEC;
+    --marigold:#D9A441; --clay:#B0564A; --good:#3E7C5A;
+    --focus:#2F6F6B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1B1E23; --card:#22262C; --dot:#33383F;
+      --ink:#E6E2D8; --ink-soft:#9EA6AE; --ink-faint:#6E7681;
+      --line:#3A3F47; --line-strong:#59606A;
+      --teal:#6FB5AC; --teal-lift:#23342F;
+      --marigold:#E5B559; --clay:#D4796A; --good:#6FB58A;
+      --focus:#6FB5AC;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1B1E23; --card:#22262C; --dot:#33383F;
+    --ink:#E6E2D8; --ink-soft:#9EA6AE; --ink-faint:#6E7681;
+    --line:#3A3F47; --line-strong:#59606A;
+    --teal:#6FB5AC; --teal-lift:#23342F;
+    --marigold:#E5B559; --clay:#D4796A; --good:#6FB58A;
+    --focus:#6FB5AC;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--paper); color:var(--ink);
+    background-image:radial-gradient(var(--dot) 0.9px, transparent 1px);
+    background-size:22px 22px;
+    font-family:"Crimson Pro", Georgia, serif; font-size:16px; line-height:1.45;
+    padding-block:26px 60px; padding-left:16px; padding-right:16px;
+  }
+  .wrap{ max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:26px; }
+
+  /* ---------------- masthead ---------------- */
+  .top{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .top h1{ margin:0; font-family:"Caveat",cursive; font-weight:700; font-size:44px;
+           line-height:.9; letter-spacing:.005em; }
+  .top .sub{ font-family:"Courier Prime",monospace; font-size:11px; text-transform:uppercase;
+             letter-spacing:.2em; color:var(--teal); margin-top:6px; }
+  .month-pick{ display:flex; flex-direction:column; gap:4px; }
+  .month-pick label{ font-family:"Courier Prime",monospace; font-size:9.5px; font-weight:700;
+                     text-transform:uppercase; letter-spacing:.18em; color:var(--ink-soft); }
+  input[type="month"]{
+    font-family:"Courier Prime",monospace; font-size:14px; color:var(--ink);
+    background:var(--card); border:1px solid var(--line); border-radius:2px;
+    padding:7px 9px; color-scheme:light dark;
+  }
+
+  /* ---------------- section shell ---------------- */
+  section{ display:flex; flex-direction:column; gap:12px; }
+  .sec-head{ display:flex; align-items:center; gap:8px; }
+  .sec-head svg{ flex:none; }
+  .sec-head h2{ margin:0; font-family:"Courier Prime",monospace; font-size:12px; font-weight:700;
+                text-transform:uppercase; letter-spacing:.22em; color:var(--ink); }
+  .sec-head .rule{ flex:1; height:1px; background:var(--line); }
+  .sec-head .n{ font-family:"Caveat",cursive; font-size:20px; color:var(--ink-faint);
+                line-height:1; }
+
+  /* ---------------- fields: ruled lines, not boxes ---------------- */
+  .f{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .f > label, .lab{ font-family:"Courier Prime",monospace; font-size:9.5px; font-weight:700;
+                    text-transform:uppercase; letter-spacing:.16em; color:var(--ink-soft); }
+  .f .help{ font-family:"Crimson Pro",serif; font-style:italic; font-size:13px;
+            color:var(--ink-faint); letter-spacing:0; text-transform:none; font-weight:400; }
+  input[type="text"], input[type="number"], textarea{
+    font-family:"Crimson Pro",Georgia,serif; font-size:16px; line-height:1.5; color:var(--ink);
+    background:transparent; border:0; border-bottom:1px solid var(--line);
+    padding:5px 2px; width:100%; border-radius:0;
+  }
+  textarea{ resize:vertical; min-height:46px; }
+  input::placeholder, textarea::placeholder{ color:var(--ink-faint); font-style:italic; }
+  input:focus, textarea:focus{ outline:none; border-bottom-color:var(--focus);
+                               box-shadow:0 1px 0 var(--focus); }
+  input[type="number"]{ font-family:"Courier Prime",monospace; font-variant-numeric:tabular-nums; }
+  .row2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+  .row3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 18px; }
+  @media (max-width:520px){ .row2, .row3{ grid-template-columns:1fr; } }
+
+  .with-unit{ display:flex; align-items:baseline; gap:7px; }
+  .with-unit input{ flex:1; }
+  .unit{ font-family:"Courier Prime",monospace; font-size:10px; text-transform:uppercase;
+         letter-spacing:.14em; color:var(--ink-faint); flex:none; }
+
+  .auto{ display:inline-flex; align-items:center; gap:4px; font-family:"Courier Prime",monospace;
+         font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+         color:var(--teal); background:var(--teal-lift); border-radius:2px; padding:2px 5px; }
+
+  /* ---------------- books ---------------- */
+  .books{ display:flex; flex-direction:column; gap:10px; }
+  .book{ display:grid; grid-template-columns:1fr; gap:8px 12px;
+         background:var(--card); border:1px solid var(--line); border-left:3px solid var(--marigold);
+         border-radius:2px; padding:11px 12px; }
+  .book .line1{ display:grid; grid-template-columns:1.6fr 1.1fr; gap:12px; }
+  .book .line2{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  @media (max-width:520px){ .book .line1{ grid-template-columns:1fr; } }
+  .book .idx{ font-family:"Caveat",cursive; font-size:17px; color:var(--ink-faint); }
+  .rate{ display:inline-flex; align-items:center; gap:1px; }
+  .rate input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .rate label{ cursor:pointer; font-size:19px; line-height:1; color:var(--ink-faint);
+               padding:1px 1px; user-select:none; }
+  .rate label.on{ color:var(--marigold); }
+  .rate input:focus-visible + label{ outline:2px solid var(--focus); outline-offset:1px; }
+  .pagebox{ width:78px; }
+  .pagebox input{ text-align:right; }
+  .kill{ margin-left:auto; background:transparent; border:1px solid var(--line);
+         color:var(--ink-faint); border-radius:2px; cursor:pointer; padding:3px 8px;
+         font-family:"Courier Prime",monospace; font-size:10px; letter-spacing:.1em; }
+  .kill:hover{ color:var(--clay); border-color:var(--clay); }
+  .add{ align-self:flex-start; background:transparent; border:1px dashed var(--line-strong);
+        color:var(--ink); border-radius:2px; cursor:pointer; padding:8px 14px;
+        font-family:"Courier Prime",monospace; font-size:11px; font-weight:700;
+        text-transform:uppercase; letter-spacing:.14em; }
+  .add:hover{ border-color:var(--teal); color:var(--teal); }
+  button:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  select{ font-family:"Crimson Pro",Georgia,serif; font-size:16px; color:var(--ink);
+          background:transparent; border:0; border-bottom:1px solid var(--line);
+          padding:5px 2px; width:100%; border-radius:0; color-scheme:light dark; }
+  select:focus{ outline:none; border-bottom-color:var(--focus); box-shadow:0 1px 0 var(--focus); }
+
+  /* ---------------- photos ---------------- */
+  .shot{ display:flex; gap:12px; align-items:flex-start; }
+  .shot .thumb{ flex:none; width:88px; height:110px; border:1px solid var(--line);
+                background:var(--card); display:flex; align-items:center; justify-content:center;
+                overflow:hidden; }
+  .shot .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .shot .side{ flex:1; display:flex; flex-direction:column; gap:7px; min-width:0; }
+  .filebtn{ display:inline-block; cursor:pointer; align-self:flex-start;
+            background:transparent; border:1px solid var(--line-strong); border-radius:2px;
+            padding:6px 11px; font-family:"Courier Prime",monospace; font-size:10px;
+            font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--ink); }
+  .filebtn:hover{ border-color:var(--teal); color:var(--teal); }
+  .filebtn input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .shotmeta{ font-family:"Courier Prime",monospace; font-size:9.5px; color:var(--ink-faint);
+             letter-spacing:.06em; }
+  .shotmeta.warn{ color:var(--clay); }
+
+  /* ---------------- status + handoff ---------------- */
+  .statusbar{ position:sticky; top:0; z-index:5; margin:-26px -16px 0; padding:9px 16px;
+              background:var(--paper); border-bottom:1px solid var(--line);
+              display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+              font-family:"Courier Prime",monospace; font-size:10px; letter-spacing:.1em;
+              text-transform:uppercase; color:var(--ink-soft); }
+  .dotrow{ display:flex; gap:3px; margin-left:auto; }
+  .dotrow i{ width:7px; height:7px; border-radius:50%; border:1px solid var(--teal); display:block; }
+  .dotrow i.on{ background:var(--teal); }
+  .saved{ color:var(--good); }
+  .saved.dim{ color:var(--ink-faint); }
+
+  .handoff{ background:var(--card); border:1px solid var(--line);
+            border-top:3px solid var(--teal); border-radius:2px; padding:18px 18px 16px;
+            display:flex; flex-direction:column; gap:11px; }
+  .handoff h3{ margin:0; font-family:"Caveat",cursive; font-weight:700; font-size:26px;
+               line-height:1; }
+  .say{ display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+        background:var(--paper); border:1px dashed var(--line-strong); border-radius:2px;
+        padding:10px 12px; }
+  .say code{ font-family:"Courier Prime",monospace; font-size:13.5px; color:var(--ink);
+             flex:1; min-width:180px; }
+  .copy{ background:var(--teal); color:var(--paper); border:0; border-radius:2px; cursor:pointer;
+         padding:7px 13px; font-family:"Courier Prime",monospace; font-size:10px; font-weight:700;
+         text-transform:uppercase; letter-spacing:.13em; flex:none; }
+  .handoff ul{ margin:0; padding-left:17px; font-size:14.5px; color:var(--ink-soft); }
+  .handoff li{ margin-bottom:2px; }
+  .handoff li b{ color:var(--ink); font-weight:600; }
+  .note{ font-family:"Crimson Pro",serif; font-style:italic; font-size:14px; color:var(--ink-faint); }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+
+<div class="wrap">
+
+  <div class="statusbar">
+    <span id="save-state" class="saved dim">Not saved yet</span>
+    <span id="store-state"></span>
+    <span class="dotrow" id="progress" role="img" aria-label="sections filled in"></span>
+  </div>
+
+  <div class="top">
+    <div>
+      <h1 id="head-month">This Month</h1>
+      <div class="sub">Month-end roundup &middot; intake</div>
+    </div>
+    <div class="month-pick">
+      <label for="month">Which month</label>
+      <input type="month" id="month">
+    </div>
+  </div>
+
+  <!-- ---------------- 1. Reading ---------------- -->
+  <section>
+    <div class="sec-head">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="var(--teal)" stroke-width="1.2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.2C6.6 3 4.6 2.6 2.4 2.8v9.4c2.2-.2 4.2.2 5.6 1.4 1.4-1.2 3.4-1.6 5.6-1.4V2.8C11.4 2.6 9.4 3 8 4.2z"/><path d="M8 4.2v9.4"/></svg>
+      <h2>Reading</h2><span class="rule"></span><span class="n">01</span>
+    </div>
+    <div class="f">
+      <span class="lab">Books finished <span class="auto">Claude looks up pages &amp; Goodreads</span></span>
+      <span class="help">Title and author is enough. Rate each one yourself &mdash; that's the bit only you know.</span>
+    </div>
+    <div class="books" id="books"></div>
+    <button type="button" class="add" id="add-book">+ Add a book</button>
+
+    <div class="row2">
+      <div class="f">
+        <label for="fav">Favourite of the month</label>
+        <select id="fav"></select>
+        <input type="text" id="fav-note" placeholder="why? (one line)">
+      </div>
+      <div class="f">
+        <label for="least">Least favourite</label>
+        <select id="least"></select>
+        <input type="text" id="least-note" placeholder="why? (one line)">
+      </div>
+    </div>
+
+    <div class="f">
+      <label for="quote">Favourite quote</label>
+      <textarea id="quote" rows="2" placeholder="&ldquo;&hellip;&rdquo;"></textarea>
+      <input type="text" id="quote-book" list="booklist" placeholder="which book it's from">
+      <datalist id="booklist"></datalist>
+    </div>
+  </section>
+
+  <!-- ---------------- 2. Health ---------------- -->
+  <section>
+    <div class="sec-head">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="var(--teal)" stroke-width="1.2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M2 11.6V5.2l2.6.8 1.6 2 3 .9 4.4 1.5c.9.3 1.2 1.2.5 1.7-.5.4-1.3.5-2 .5H3.2c-.7 0-1.2-.4-1.2-1z"/><path d="M4.6 6 6 4.4"/></svg>
+      <h2>Health</h2><span class="rule"></span><span class="n">02</span>
+    </div>
+    <div class="f">
+      <span class="help">Four totals off your phone. <span class="auto">Claude works out what the steps add up to</span></span>
+    </div>
+    <div class="row2">
+      <div class="f"><label for="steps">Steps this month</label>
+        <div class="with-unit"><input type="number" id="steps" min="0" step="1" placeholder="248410"><span class="unit">steps</span></div></div>
+      <div class="f"><label for="sleep">Hours slept this month</label>
+        <div class="with-unit"><input type="number" id="sleep" min="0" step="0.5" placeholder="186"><span class="unit">hrs</span></div></div>
+      <div class="f"><label for="nights">Nights over 6 hrs</label>
+        <div class="with-unit"><input type="number" id="nights" min="0" step="1" placeholder="22"><span class="unit" id="nights-of">nights</span></div></div>
+      <div class="f"><label for="gym">Gym workouts</label>
+        <div class="with-unit"><input type="number" id="gym" min="0" step="1" placeholder="12"><span class="unit">sessions</span></div></div>
+    </div>
+  </section>
+
+  <!-- ---------------- 3. Family ---------------- -->
+  <section>
+    <div class="sec-head">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="var(--teal)" stroke-width="1.2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 7.4 8 2.6l5.8 4.8"/><path d="M3.6 8.5v4.9h8.8V8.5"/><path d="M6.6 13.4v-3.2h2.8v3.2"/></svg>
+      <h2>Family</h2><span class="rule"></span><span class="n">03</span>
+    </div>
+
+    <div class="f">
+      <label for="skill">Lilah's new skill this month</label>
+      <textarea id="skill" rows="2" placeholder="what she can do now that she couldn't in the last roundup"></textarea>
+    </div>
+
+    <div class="f">
+      <label>Favourite photo of Lilah</label>
+      <div class="shot">
+        <div class="thumb" id="thumb-lilah"></div>
+        <div class="side">
+          <label class="filebtn">Choose photo<input type="file" id="file-lilah" accept="image/*"></label>
+          <input type="text" id="cap-lilah" placeholder="caption, in your handwriting">
+          <span class="shotmeta" id="meta-lilah">Portrait shots crop best.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="f">
+      <label for="activity">Favourite family activity</label>
+      <input type="text" id="activity" placeholder="apple picking at Honeypot Hill">
+    </div>
+
+    <div class="f">
+      <label>Photo from that activity</label>
+      <div class="shot">
+        <div class="thumb" id="thumb-activity"></div>
+        <div class="side">
+          <label class="filebtn">Choose photo<input type="file" id="file-activity" accept="image/*"></label>
+          <input type="text" id="cap-activity" placeholder="caption">
+          <span class="shotmeta" id="meta-activity">Portrait shots crop best.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="f">
+      <label for="celebration">Anything to celebrate?</label>
+      <textarea id="celebration" rows="2" placeholder="leave it empty if the month was quiet &mdash; the page just closes up"></textarea>
+    </div>
+  </section>
+
+  <!-- ---------------- 4. Work ---------------- -->
+  <section>
+    <div class="sec-head">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="var(--teal)" stroke-width="1.2"
+        stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5.2" width="12" height="8.2" rx="1.2"/><path d="M6 5.2V3.9c0-.5.4-.9.9-.9h2.2c.5 0 .9.4.9.9v1.3"/><path d="M2 8.8h12"/></svg>
+      <h2>Work</h2><span class="rule"></span><span class="n">04</span>
+    </div>
+    <div class="f">
+      <label for="win">Biggest accomplishment</label>
+      <textarea id="win" rows="2" placeholder="the one you'd mention if someone asked how the month went"></textarea>
+    </div>
+    <div class="f">
+      <label for="carry">Action item you missed</label>
+      <textarea id="carry" rows="2" placeholder="the one that migrates to next month"></textarea>
+      <span class="help">This comes back pre-filled on next month's page, marked with a <b>&gt;</b>.</span>
+    </div>
+  </section>
+
+  <!-- ---------------- handoff ---------------- -->
+  <div class="handoff">
+    <h3>Ready for Claude</h3>
+    <div class="say">
+      <code id="say-text">Make my September 2026 roundup</code>
+      <button class="copy" id="copy" type="button">Copy</button>
+    </div>
+    <ul>
+      <li><b>Goodreads averages and page counts</b> &mdash; looked up per book, so leave those alone</li>
+      <li><b>Books read, total pages, your average score</b> &mdash; added up from the rows above</li>
+      <li><b>What your steps add up to</b> &mdash; converted to miles and matched to a real distance</li>
+    </ul>
+    <div class="note" id="privacy-note"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const MONTHS = ["January","February","March","April","May","June","July",
+                  "August","September","October","November","December"];
+
+  /* ---------- state ---------- */
+  let db = null, key = "", data = blank(), photos = { lilah:"", activity:"" },
+      saveTimer = null, loading = false, dirty = false;
+
+  function blank(){
+    return { books:[], fav:"", favNote:"", least:"", leastNote:"", quote:"", quoteBook:"",
+             steps:"", sleep:"", nights:"", gym:"",
+             skill:"", capLilah:"", activity:"", capActivity:"", celebration:"",
+             win:"", carry:"" };
+  }
+  const monthKey = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+  const daysIn   = k => { const [y,m] = k.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+  const pretty   = k => { const [y,m] = k.split("-").map(Number); return MONTHS[m-1] + " " + y; };
+
+  /* ---------- books ---------- */
+  function bookRow(b, i){
+    const row = document.createElement("div");
+    row.className = "book";
+    row.innerHTML = `
+      <div class="line1">
+        <div class="f"><label for="bt${i}">Title <span class="idx">#${i+1}</span></label>
+          <input type="text" id="bt${i}" data-k="title" placeholder="Piranesi"></div>
+        <div class="f"><label for="ba${i}">Author</label>
+          <input type="text" id="ba${i}" data-k="author" placeholder="Susanna Clarke"></div>
+      </div>
+      <div class="line2">
+        <span class="f" style="gap:2px">
+          <span class="lab">My score</span>
+          <span class="rate" id="rt${i}" role="radiogroup" aria-label="My score for book ${i+1}">
+            ${[1,2,3,4,5].map(v => `<input type="radio" id="r${i}-${v}" name="rate${i}" value="${v}">
+               <label for="r${i}-${v}" title="${v} out of 5">&#9734;</label>`).join("")}
+          </span>
+        </span>
+        <span class="f pagebox"><label for="bp${i}">Pages</label>
+          <input type="number" id="bp${i}" data-k="pages" min="1" step="1" placeholder="auto"></span>
+        <button type="button" class="kill" aria-label="Remove book ${i+1}">Remove</button>
+      </div>`;
+
+    row.querySelector('[data-k="title"]').value  = b.title  || "";
+    row.querySelector('[data-k="author"]').value = b.author || "";
+    row.querySelector('[data-k="pages"]').value  = b.pages  || "";
+    const stars = row.querySelectorAll(".rate label");
+    function paint(v){
+      stars.forEach((el,j) => { const on = j < v; el.classList.toggle("on", on);
+        el.innerHTML = on ? "&#9733;" : "&#9734;"; });
+    }
+    if (b.mine) { const r = row.querySelector(`#r${i}-${b.mine}`); if (r) r.checked = true; }
+    paint(Number(b.mine) || 0);
+
+    row.querySelectorAll('input[data-k]').forEach(inp =>
+      inp.addEventListener("input", () => { b[inp.dataset.k] = inp.value; touch(); refreshPickers(); }));
+    row.querySelectorAll('.rate input').forEach(inp =>
+      inp.addEventListener("change", () => { b.mine = Number(inp.value); paint(b.mine); touch(); }));
+    row.querySelector(".kill").addEventListener("click", () => {
+      data.books.splice(i,1); renderBooks(); touch(); });
+    return row;
+  }
+  function renderBooks(){
+    const host = $("books"); host.textContent = "";
+    data.books.forEach((b,i) => host.appendChild(bookRow(b,i)));
+    refreshPickers();
+  }
+  function refreshPickers(){
+    const titles = data.books.map(b => (b.title || "").trim()).filter(Boolean);
+    [["fav", data.fav], ["least", data.least]].forEach(([id, cur]) => {
+      const sel = $(id); sel.textContent = "";
+      const none = document.createElement("option");
+      none.value = ""; none.textContent = titles.length ? "— pick one —" : "— add a book first —";
+      sel.appendChild(none);
+      titles.forEach(t => { const o = document.createElement("option");
+        o.value = t; o.textContent = t; sel.appendChild(o); });
+      sel.value = titles.includes(cur) ? cur : "";
+    });
+    const dl = $("booklist"); dl.textContent = "";
+    titles.forEach(t => { const o = document.createElement("option"); o.value = t; dl.appendChild(o); });
+  }
+
+  /* ---------- plain fields ---------- */
+  const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","steps","sleep",
+                  "nights","gym","skill","capLilah","activity","capActivity","celebration",
+                  "win","carry"];
+  const EL = { fav:"fav", favNote:"fav-note", least:"least", leastNote:"least-note",
+               quote:"quote", quoteBook:"quote-book", steps:"steps", sleep:"sleep",
+               nights:"nights", gym:"gym", skill:"skill", capLilah:"cap-lilah",
+               activity:"activity", capActivity:"cap-activity", celebration:"celebration",
+               win:"win", carry:"carry" };
+  FIELDS.forEach(k => {
+    const el = $(EL[k]);
+    const ev = el.tagName === "SELECT" ? "change" : "input";
+    el.addEventListener(ev, () => { data[k] = el.value; touch(); });
+  });
+  function paintFields(){
+    FIELDS.forEach(k => { $(EL[k]).value = data[k] == null ? "" : data[k]; });
+    $("nights-of").textContent = "of " + daysIn(key);
+  }
+
+  /* ---------- photos: shrunk to fit one 256 KiB document ---------- */
+  const CAP = 190000;                       // characters of data URI, comfortably under the cap
+  const STEPS = [[1000,.72],[860,.66],[720,.60],[600,.52],[460,.45]];
+
+  function shrink(file){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = () => reject(new Error("could not read that file"));
+      fr.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("that file isn't an image Claude can read"));
+        img.onload = () => {
+          for (const [max, q] of STEPS){
+            const scale = Math.min(1, max / Math.max(img.width, img.height));
+            const c = document.createElement("canvas");
+            c.width  = Math.max(1, Math.round(img.width  * scale));
+            c.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = c.getContext("2d");
+            ctx.fillStyle = "#fff"; ctx.fillRect(0,0,c.width,c.height);
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            const url = c.toDataURL("image/jpeg", q);
+            if (url.length <= CAP) return resolve({ url, w:c.width, h:c.height });
+          }
+          reject(new Error("that photo won't compress small enough — try a smaller crop"));
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function paintThumb(slot){
+    const box = $("thumb-" + slot); box.textContent = "";
+    if (photos[slot]){
+      const img = document.createElement("img");
+      img.src = photos[slot]; img.alt = "chosen photo";
+      box.appendChild(img);
+    } else {
+      box.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+        stroke="var(--ink-faint)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"
+        aria-hidden="true"><path d="M3 8.5h3.4L8 6.3h8l1.6 2.2H21v10H3z"/><circle cx="12" cy="13.2" r="3.1"/></svg>`;
+    }
+  }
+  ["lilah","activity"].forEach(slot => {
+    $("file-" + slot).addEventListener("change", async e => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const meta = $("meta-" + slot);
+      meta.className = "shotmeta"; meta.textContent = "Shrinking…";
+      try {
+        const { url, w, h } = await shrink(file);
+        photos[slot] = url; paintThumb(slot);
+        meta.textContent = `Saved · ${w}×${h} · ${Math.round(url.length/1024)} KB`;
+        savePhoto(slot);
+        progress();
+      } catch (err) {
+        meta.className = "shotmeta warn";
+        meta.textContent = err.message;
+      }
+      e.target.value = "";
+    });
+  });
+
+  /* ---------- persistence ---------- */
+  const lsKey  = k => "roundup:" + k;
+  const lsPhoto = (k,s) => "roundup:" + k + ":" + s;
+
+  function touch(){
+    if (loading) return;
+    dirty = true;
+    $("save-state").className = "saved dim";
+    $("save-state").textContent = "Saving…";
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 700);
+    progress();
+  }
+  async function save(){
+    if (loading) return;
+    const body = Object.assign({}, data, {
+      month: MONTHS[Number(key.split("-")[1]) - 1],
+      year: Number(key.split("-")[0]),
+      daysInMonth: daysIn(key),
+      key: key,
+      updatedAt: new Date().toISOString()
+    });
+    try { localStorage.setItem(lsKey(key), JSON.stringify(body)); } catch (e) {}
+    if (db){
+      try { await db.doc("entries/" + key).set(body); }
+      catch (err) { mark("Saved on this device only", true); return; }
+    }
+    mark("Saved " + new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}), false);
+  }
+  async function savePhoto(slot){
+    try { localStorage.setItem(lsPhoto(key,slot), photos[slot]); } catch (e) {}
+    if (db){
+      try { await db.doc("photos/" + key + "-" + slot).set({ src: photos[slot], key, slot }); }
+      catch (err) { $("meta-" + slot).className = "shotmeta warn";
+                    $("meta-" + slot).textContent = "Kept on this device — it didn't reach the store."; }
+    }
+  }
+  function mark(text, dim){
+    const el = $("save-state");
+    el.className = "saved" + (dim ? " dim" : "");
+    el.textContent = text;
+  }
+
+  async function load(k){
+    loading = true;
+    key = k;
+    $("month").value = k;
+    $("head-month").textContent = pretty(k);
+    $("say-text").textContent = "Make my " + pretty(k) + " roundup";
+    data = blank(); photos = { lilah:"", activity:"" };
+
+    let body = null;
+    if (db){
+      try {
+        const snap = await db.doc("entries/" + k).get();
+        if (snap.exists) body = snap.data();
+        for (const slot of ["lilah","activity"]){
+          const p = await db.doc("photos/" + k + "-" + slot).get();
+          if (p.exists) photos[slot] = String((p.data() || {}).src || "");
+        }
+      } catch (e) { /* fall through to local */ }
+    }
+    if (!body){
+      try { body = JSON.parse(localStorage.getItem(lsKey(k)) || "null"); } catch (e) {}
+    }
+    ["lilah","activity"].forEach(slot => {
+      if (!photos[slot]){ try { photos[slot] = localStorage.getItem(lsPhoto(k,slot)) || ""; } catch(e){} }
+    });
+
+    if (body){
+      Object.keys(blank()).forEach(f => { if (body[f] != null) data[f] = body[f]; });
+      data.books = Array.isArray(body.books) ? body.books.map(b => Object.assign({}, b)) : [];
+      mark("Loaded " + pretty(k), true);
+    } else {
+      mark("New month — nothing saved yet", true);
+      await carryForward(k);
+    }
+    if (!data.books.length) data.books = [{ title:"", author:"", pages:"", mine:0 }];
+
+    renderBooks(); paintFields();
+    ["lilah","activity"].forEach(paintThumb);
+    loading = false;
+    dirty = false;
+    progress();
+  }
+
+  /* the migrated task: last month's carryover opens this month pre-filled */
+  async function carryForward(k){
+    const [y,m] = k.split("-").map(Number);
+    const prev = new Date(y, m - 2, 1);
+    const pk = monthKey(prev);
+    let prevBody = null;
+    if (db){ try { const s = await db.doc("entries/" + pk).get(); if (s.exists) prevBody = s.data(); } catch(e){} }
+    if (!prevBody){ try { prevBody = JSON.parse(localStorage.getItem(lsKey(pk)) || "null"); } catch(e){} }
+    if (prevBody && prevBody.carry){
+      data.carry = prevBody.carry;
+      mark("Carried the open item over from " + pretty(pk), true);
+    }
+  }
+
+  /* ---------- progress ---------- */
+  function progress(){
+    const filled = [
+      data.books.some(b => (b.title||"").trim()),
+      !!(data.steps || data.sleep || data.nights || data.gym),
+      !!((data.skill||"").trim() || photos.lilah || (data.activity||"").trim()),
+      !!((data.win||"").trim() || (data.carry||"").trim())
+    ];
+    $("progress").innerHTML = filled.map(f => `<i class="${f ? "on" : ""}"></i>`).join("");
+    $("progress").setAttribute("aria-label",
+      filled.filter(Boolean).length + " of 4 sections filled in");
+  }
+
+  /* ---------- wiring ---------- */
+  $("add-book").addEventListener("click", () => {
+    data.books.push({ title:"", author:"", pages:"", mine:0 });
+    renderBooks(); touch();
+    const rows = $("books").querySelectorAll('.book input[data-k="title"]');
+    if (rows.length) rows[rows.length - 1].focus();
+  });
+  $("month").addEventListener("change", e => { if (e.target.value) load(e.target.value); });
+  $("copy").addEventListener("click", async () => {
+    const btn = $("copy");
+    try { await navigator.clipboard.writeText($("say-text").textContent);
+          btn.textContent = "Copied"; }
+    catch (e) { btn.textContent = "Select it"; }
+    setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+  });
+
+  /* first paint happens immediately; the store joins when it is ready */
+  load(monthKey(new Date()));
+  $("privacy-note").textContent =
+    "Only you and anyone you share this page with can see what's here.";
+
+  const ready = window.claude && typeof window.claude.use === "function"
+    ? window.claude.use("db")
+    : Promise.resolve(null);
+
+  ready.then(ns => {
+    if (!ns){
+      $("store-state").textContent = "· this device only";
+      return;
+    }
+    db = ns;
+    $("store-state").textContent = "· synced";
+    /* nothing typed yet? re-read the month. Already typing? push it up instead
+       of clobbering what's on screen. */
+    if (dirty){ save(); ["lilah","activity"].forEach(s => { if (photos[s]) savePhoto(s); }); }
+    else load(key);
+  }).catch(() => { $("store-state").textContent = "· this device only"; });
+})();
+</script>
