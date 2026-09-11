@@ -179,7 +179,10 @@ const DATA = {
   .hstat .n{ font-family:"Caveat",cursive; font-weight:700; font-size:19px; line-height:1;
              font-variant-numeric:tabular-nums; }
   .hstat .u{ font-size:7px; text-transform:uppercase; letter-spacing:.13em; color:var(--ink-soft); }
-  .nights{ display:flex; flex-wrap:wrap; gap:2.6px; max-width:150px; }
+  /* 16 to a row, so 28-31 nights always land as two tidy rows and never
+     orphan a single dot onto a third */
+  .nights{ display:grid; grid-template-columns:repeat(16, 5.4px); gap:2.6px;
+           width:max-content; }
   .nights i{ width:5.4px; height:5.4px; border-radius:50%; display:block;
              border:1px solid var(--teal); }
   .nights i.on{ background:var(--teal); }
