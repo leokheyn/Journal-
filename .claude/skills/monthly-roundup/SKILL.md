@@ -93,9 +93,19 @@ block at the top of `template.html`:
              "nightsOver6": 0, "gymWorkouts": 0},
   "family": {"lilahSkill": "", "lilahPhoto": {"caption": ""},
              "activity": {"title": "", "caption": ""}, "celebration": ""},
-  "work": {"accomplishment": "", "carryover": ""}
+  "work": {"accomplishment": "", "carryover": ""},
+
+  // optional — omit the whole key and no weather band is drawn
+  "weather": {"avgHigh": 0, "avgLow": 0, "rain": 0.0,
+              "rainNote": "155% of normal", "note": "hottest 91° on the 7th"}
 }
 ```
+
+For `weather`, find the month's **observed** figures for their city (not the
+long-run averages), and make `rainNote` the comparison against normal — that
+contrast is the interesting part, not the raw inches. The historical weather
+API is blocked by this org's egress policy, so search for a monthly climate
+summary rather than trying to fetch one.
 
 Mapping from the form's fields: `fav`/`favNote` → `favorite`,
 `least`/`leastNote` → `leastFavorite`, `quote`/`quoteBook` → `quote`,
