@@ -102,18 +102,46 @@
          background:var(--card); border:1px solid var(--line); border-left:3px solid var(--marigold);
          border-radius:2px; padding:11px 12px; }
   .book .line1{ display:grid; grid-template-columns:1.6fr 1.1fr; gap:12px; }
-  .book .line2{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .book .line2{ display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; }
   @media (max-width:520px){ .book .line1{ grid-template-columns:1fr; } }
   .book .idx{ font-family:"Caveat",cursive; font-size:17px; color:var(--ink-faint); }
-  .rate{ display:inline-flex; align-items:center; gap:1px; }
-  .rate input{ position:absolute; opacity:0; width:1px; height:1px; }
-  .rate label{ cursor:pointer; font-size:19px; line-height:1; color:var(--ink-faint);
-               padding:1px 1px; user-select:none; }
-  .rate label.on{ color:var(--marigold); }
-  .rate input:focus-visible + label{ outline:2px solid var(--focus); outline-offset:1px; }
+  /* score slider — quarter points, because half a star is often a lie */
+  .rate{ display:flex; align-items:center; gap:7px; }
+  .rate .end{ font-family:"Courier Prime",monospace; font-size:9px; color:var(--ink-faint);
+              flex:none; }
+  .rate .val{ font-family:"Caveat",cursive; font-size:21px; font-weight:700; line-height:1;
+              color:var(--marigold); min-width:36px; margin-left:5px;
+              font-variant-numeric:tabular-nums; }
+  .rate .val.none{ color:var(--ink-faint); font-size:16px; }
+  input[type="range"]{
+    -webkit-appearance:none; appearance:none; width:148px; height:15px; margin:0;
+    background:transparent; cursor:pointer; flex:none;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:3px; border-radius:2px;
+    background:linear-gradient(to right, var(--marigold) var(--fill,0%), var(--line) var(--fill,0%));
+  }
+  input[type="range"]::-moz-range-track{
+    height:3px; border-radius:2px;
+    background:linear-gradient(to right, var(--marigold) var(--fill,0%), var(--line) var(--fill,0%));
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:12px; height:12px; border-radius:50%;
+    background:var(--marigold); border:2px solid var(--card); margin-top:-4.5px;
+    box-shadow:0 0 0 1px var(--marigold);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:10px; height:10px; border-radius:50%; background:var(--marigold);
+    border:2px solid var(--card); box-shadow:0 0 0 1px var(--marigold);
+  }
+  input[type="range"]:focus{ outline:none; }
+  input[type="range"]:focus-visible::-webkit-slider-thumb{ outline:2px solid var(--focus);
+                                                           outline-offset:2px; }
+  input[type="range"]:focus-visible::-moz-range-thumb{ outline:2px solid var(--focus);
+                                                       outline-offset:2px; }
   .pagebox{ width:78px; }
   .pagebox input{ text-align:right; }
-  .kill{ margin-left:auto; background:transparent; border:1px solid var(--line);
+  .kill{ margin-left:auto; align-self:center; background:transparent; border:1px solid var(--line);
          color:var(--ink-faint); border-radius:2px; cursor:pointer; padding:3px 8px;
          font-family:"Courier Prime",monospace; font-size:10px; letter-spacing:.1em; }
   .kill:hover{ color:var(--clay); border-color:var(--clay); }
@@ -370,11 +398,14 @@
           <input type="text" id="ba${i}" data-k="author" placeholder="Susanna Clarke"></div>
       </div>
       <div class="line2">
-        <span class="f" style="gap:2px">
-          <span class="lab">My score</span>
-          <span class="rate" id="rt${i}" role="radiogroup" aria-label="My score for book ${i+1}">
-            ${[1,2,3,4,5].map(v => `<input type="radio" id="r${i}-${v}" name="rate${i}" value="${v}">
-               <label for="r${i}-${v}" title="${v} out of 5">&#9734;</label>`).join("")}
+        <span class="f" style="gap:3px">
+          <label class="lab" for="rt${i}">My score</label>
+          <span class="rate">
+            <span class="end" aria-hidden="true">0</span>
+            <input type="range" id="rt${i}" min="0" max="5" step="0.25" value="0"
+                   aria-label="My score for book ${i+1}, out of 5 in quarter points">
+            <span class="end" aria-hidden="true">5</span>
+            <output class="val none" for="rt${i}">&mdash;</output>
           </span>
         </span>
         <span class="f pagebox"><label for="bp${i}">Pages</label>
@@ -385,18 +416,21 @@
     row.querySelector('[data-k="title"]').value  = b.title  || "";
     row.querySelector('[data-k="author"]').value = b.author || "";
     row.querySelector('[data-k="pages"]').value  = b.pages  || "";
-    const stars = row.querySelectorAll(".rate label");
+    const slider = row.querySelector('input[type="range"]');
+    const readout = row.querySelector("output");
+    const fmt = v => Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, "");
     function paint(v){
-      stars.forEach((el,j) => { const on = j < v; el.classList.toggle("on", on);
-        el.innerHTML = on ? "&#9733;" : "&#9734;"; });
+      slider.style.setProperty("--fill", (v / 5 * 100) + "%");
+      readout.className = "val" + (v > 0 ? "" : " none");
+      readout.innerHTML = v > 0 ? fmt(v) : "&mdash;";
     }
-    if (b.mine) { const r = row.querySelector(`#r${i}-${b.mine}`); if (r) r.checked = true; }
+    slider.value = Number(b.mine) || 0;
     paint(Number(b.mine) || 0);
 
     row.querySelectorAll('input[data-k]').forEach(inp =>
       inp.addEventListener("input", () => { b[inp.dataset.k] = inp.value; touch(); refreshPickers(); }));
-    row.querySelectorAll('.rate input').forEach(inp =>
-      inp.addEventListener("change", () => { b.mine = Number(inp.value); paint(b.mine); touch(); }));
+    slider.addEventListener("input", () => {
+      b.mine = Number(slider.value); paint(b.mine); touch(); });
     row.querySelector(".kill").addEventListener("click", () => {
       data.books.splice(i,1); renderBooks(); touch(); });
     return row;

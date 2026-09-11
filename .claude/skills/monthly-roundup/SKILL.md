@@ -52,7 +52,9 @@ Do not Read the files this writes. `build.py` handles them.
   paperback); if the form already carries a `pages` value they typed, that
   one wins.
 - `goodreads` — the Goodreads **average** rating, to two decimals. This is the
-  crowd's score, not theirs. Their own score is in `mine`, out of 5.
+  crowd's score, not theirs. Their own score is in `mine`, out of 5 — the form
+  records it in quarter points, so pass fractional values like `4.25` through
+  untouched rather than rounding them to whole stars.
 
 Search for these; don't recall them from memory, since ratings drift. If a
 book genuinely can't be found, leave `goodreads` off that entry rather than
