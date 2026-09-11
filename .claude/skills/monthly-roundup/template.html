@@ -241,9 +241,13 @@ const DATA = {
              line-height:1; color:var(--marigold); font-variant-numeric:tabular-nums; }
 
   /* weather: one band, only drawn when the month carries weather data */
-  .weather{ display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+  .weather{ display:flex; flex-direction:column; gap:2.5px;
             border-top:1px dashed var(--ink-faint); border-bottom:1px dashed var(--ink-faint);
-            padding:3.5px 0; }
+            padding:4px 0; }
+  .wrow{ display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
+  .wnote{ display:flex; align-items:center; gap:5px; font-family:"Crimson Pro",Georgia,serif;
+          font-style:italic; font-size:8.8px; line-height:1.25; color:var(--ink-soft); }
+  .wnote svg{ flex:none; }
   .weather .wlab{ font-size:6.8px; font-weight:700; text-transform:uppercase;
                   letter-spacing:.18em; color:var(--teal); flex:none; }
   .witem{ display:flex; align-items:center; gap:4px; font-family:"Crimson Pro",Georgia,serif;
@@ -405,15 +409,22 @@ const DATA = {
       <span class="ss">${b.mine > 0 ? score(b.mine) : "&ndash;"}</span></div>`)
     .join("");
 
-  /* weather is optional: no data, no band */
+  /* weather is optional: no data, no band. Each month names its own figures,
+     since what's worth reporting differs — a dry month and a cold one are not
+     interesting for the same reasons. */
   const wx = DATA.weather;
-  const weatherBand = !wx ? "" : `
+  const BOLT = `<svg viewBox="0 0 12 16" width="8.5" height="11.5" aria-hidden="true">
+      <path d="M7.6 0.9 2.3 9.1h3.1l-1 6 5.4-8.7H6.7z" fill="var(--marigold)"
+            stroke="var(--ink)" stroke-width=".7" stroke-linejoin="round"/></svg>`;
+  const weatherBand = !(wx && wx.items && wx.items.length) ? "" : `
     <div class="weather">
-      <span class="wlab">Weather</span>
-      ${wx.avgHigh != null ? `<span class="witem"><b class="warm">${esc(wx.avgHigh)}&deg;</b> avg high</span>` : ""}
-      ${wx.avgLow  != null ? `<span class="witem"><b>${esc(wx.avgLow)}&deg;</b> avg low</span>` : ""}
-      ${wx.rain    != null ? `<span class="witem"><b class="wet">${esc(wx.rain)}&Prime;</b> rain${wx.rainNote ? ", " + esc(wx.rainNote) : ""}</span>` : ""}
-      ${wx.note ? `<span class="witem">${esc(wx.note)}</span>` : ""}
+      <div class="wrow">
+        <span class="wlab">${esc(wx.place || "Weather")}</span>
+        ${wx.items.map(it => `<span class="witem"><b class="${
+          it.tone === "warm" ? "warm" : it.tone === "wet" ? "wet" : ""
+        }">${esc(it.value)}</b> ${esc(it.label)}</span>`).join("")}
+      </div>
+      ${wx.note ? `<div class="wnote">${BOLT}<span>${esc(wx.note)}</span></div>` : ""}
     </div>`;
 
   const head = (icon, name) =>

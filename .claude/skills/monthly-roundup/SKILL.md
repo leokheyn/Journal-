@@ -96,16 +96,30 @@ block at the top of `template.html`:
   "work": {"accomplishment": "", "carryover": ""},
 
   // optional — omit the whole key and no weather band is drawn
-  "weather": {"avgHigh": 0, "avgLow": 0, "rain": 0.0,
-              "rainNote": "155% of normal", "note": "hottest 91° on the 7th"}
+  "weather": {
+    "place": "Melbourne, FL",
+    "items": [{"value": "84.5°", "label": "mean, +2.5°", "tone": "warm"}],
+    "note": "one italic line under the figures, drawn with a lightning bolt"
+  }
 }
 ```
 
-For `weather`, find the month's **observed** figures for their city (not the
-long-run averages), and make `rainNote` the comparison against normal — that
-contrast is the interesting part, not the raw inches. The historical weather
-API is blocked by this org's egress policy, so search for a monthly climate
-summary rather than trying to fetch one.
+**Weather.** Home is **Melbourne, Florida** (NWS station KMLB) — use that
+unless they say otherwise. Report the month's **observed** figures, never the
+long-run averages, and make at least one of them a departure from normal:
+the contrast is the story, not the raw number. `tone` is `"warm"`, `"wet"`,
+or omitted, and only tints the figure.
+
+Keep `label` to about 14 characters — longer ones wrap the row to two lines
+and eat the photos below. Four items is the most that fits on one line.
+`note` is one short sentence for whatever the figures alone don't say.
+
+weather.gov, the historical weather APIs and weatherandclimate.info are all
+blocked by this org's egress policy, so these come from search. Corroborate
+anything surprising with a second search before it goes on the page, and if
+a figure can't be confirmed, leave it off rather than printing a number that
+might be wrong on something they're going to paste into a journal. Monthly
+lightning strike counts are not published per-city — do not invent one.
 
 Mapping from the form's fields: `fav`/`favNote` → `favorite`,
 `least`/`leastNote` → `leastFavorite`, `quote`/`quoteBook` → `quote`,
