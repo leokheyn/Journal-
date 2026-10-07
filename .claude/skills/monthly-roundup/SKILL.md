@@ -157,7 +157,8 @@ lightning strike counts are not published per-city — do not invent one.
 Mapping from the form's fields: `fav`/`favNote` → `favorite`,
 `least`/`leastNote` → `leastFavorite`, `quote`/`quoteBook` → `quote`,
 `sleep` → `hoursSlept`, `nights` → `nightsOver6`, `gym` → `gymWorkouts`,
-`skill` → `lilahSkill`, `win` → `accomplishment`, `carry` → `carryover`
+`skill` → `lilahSkill`, `highlights` → `highlights` (one per line),
+`win` → `accomplishment`, `carry` → `carryover`
 (one line per item — each becomes its own `>`). The form's `activity` and the
 photo captions are no longer drawn: family outings go in `highlights` as a
 short numbered list, and the photo strip runs without captions. Leave `month`, `year`,
@@ -260,6 +261,9 @@ up. Two things there are load-bearing:
   weekday with this month's individual nights jittered over it. Don't merge
   them into one dual-axis chart, and don't draw the box from a single month —
   quartiles of four nights are noise, which is why the box uses the baseline.
+- The sleep chart is the page's centrepiece and gets the wider, taller half of
+  the charts row; the step headline wraps inside the steps column rather than
+  running full width, which is what buys that space.
 - That chart scales to the baseline's reach, not to the month's extremes. One
   13-hour night would otherwise flatten every other weekday; anything above
   the top is pinned there and drawn as a caret.

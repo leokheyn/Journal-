@@ -297,32 +297,36 @@
     </div>
 
     <div class="f">
-      <label>Favourite photo of Lilah</label>
-      <div class="shot">
-        <div class="thumb" id="thumb-lilah"></div>
-        <div class="side">
-          <label class="filebtn">Choose photo<input type="file" id="file-lilah" accept="image/*"></label>
-          <input type="text" id="cap-lilah" placeholder="caption, in your handwriting">
-          <span class="shotmeta" id="meta-lilah">Portrait shots crop best.</span>
+      <label for="highlights">Highlights of the month</label>
+      <textarea id="highlights" rows="3" placeholder="One per line:&#10;Brunch with Lila's Fam&#10;Trivia @ Intracoastal"></textarea>
+      <span class="help">Three or so is about what the page holds. They print as a numbered list.</span>
+    </div>
+
+    <div class="row2">
+      <div class="f">
+        <label>Photo one</label>
+        <div class="shot">
+          <div class="thumb" id="thumb-lilah"></div>
+          <div class="side">
+            <label class="filebtn">Choose photo<input type="file" id="file-lilah" accept="image/*"></label>
+            <span class="shotmeta" id="meta-lilah">Portrait shots crop best.</span>
+          </div>
+        </div>
+      </div>
+      <div class="f">
+        <label>Photo two</label>
+        <div class="shot">
+          <div class="thumb" id="thumb-activity"></div>
+          <div class="side">
+            <label class="filebtn">Choose photo<input type="file" id="file-activity" accept="image/*"></label>
+            <span class="shotmeta" id="meta-activity">Portrait shots crop best.</span>
+          </div>
         </div>
       </div>
     </div>
-
     <div class="f">
-      <label for="activity">Favourite family activity</label>
-      <input type="text" id="activity" placeholder="apple picking at Honeypot Hill">
-    </div>
-
-    <div class="f">
-      <label>Photo from that activity</label>
-      <div class="shot">
-        <div class="thumb" id="thumb-activity"></div>
-        <div class="side">
-          <label class="filebtn">Choose photo<input type="file" id="file-activity" accept="image/*"></label>
-          <input type="text" id="cap-activity" placeholder="caption">
-          <span class="shotmeta" id="meta-activity">Portrait shots crop best.</span>
-        </div>
-      </div>
+      <span class="help">Attach any further photos in chat when you ask for the roundup &mdash;
+        they all go into one strip, no captions.</span>
     </div>
 
     <div class="f">
@@ -379,7 +383,7 @@
   function blank(){
     return { books:[], fav:"", favNote:"", least:"", leastNote:"", quote:"", quoteBook:"",
              gym:"",
-             skill:"", capLilah:"", activity:"", capActivity:"", celebration:"",
+             skill:"", highlights:"", celebration:"",
              win:"", carry:"" };
   }
   const monthKey = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
@@ -457,11 +461,10 @@
 
   /* ---------- plain fields ---------- */
   const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","gym","skill",
-                  "capLilah","activity","capActivity","celebration","win","carry"];
+                  "highlights","celebration","win","carry"];
   const EL = { fav:"fav", favNote:"fav-note", least:"least", leastNote:"least-note",
                quote:"quote", quoteBook:"quote-book", gym:"gym", skill:"skill",
-               capLilah:"cap-lilah",
-               activity:"activity", capActivity:"cap-activity", celebration:"celebration",
+               highlights:"highlights", celebration:"celebration",
                win:"win", carry:"carry" };
   FIELDS.forEach(k => {
     const el = $(EL[k]);
@@ -639,7 +642,7 @@
     const filled = [
       data.books.some(b => (b.title||"").trim()),
       !!String(data.gym || "").trim(),
-      !!((data.skill||"").trim() || photos.lilah || (data.activity||"").trim()),
+      !!((data.skill||"").trim() || photos.lilah || (data.highlights||"").trim()),
       !!((data.win||"").trim() || (data.carry||"").trim())
     ];
     $("progress").innerHTML = filled.map(f => `<i class="${f ? "on" : ""}"></i>`).join("");

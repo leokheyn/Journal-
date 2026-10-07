@@ -372,7 +372,7 @@ const DATA = {
   .stat .n.alt{ color:var(--teal); }
   .stat .u{ font-size:7.5px; text-transform:uppercase; letter-spacing:.14em; color:var(--ink-soft); }
 
-  .scores{ display:flex; gap:20px; align-items:center; }
+  .scores{ display:flex; gap:14px; align-items:center; }
   .score{ display:flex; align-items:center; gap:5px; }
   .score .who{ font-size:7px; text-transform:uppercase; letter-spacing:.13em; color:var(--ink-soft); }
   .score .val{ font-family:"Caveat",cursive; font-size:16px; font-weight:700; line-height:1;
@@ -386,23 +386,23 @@ const DATA = {
   .pick b{ font-weight:600; }
   .pick i{ color:var(--ink-soft); font-style:italic; }
 
-  .quote{ position:relative; border-left:2px solid var(--marigold); padding:2px 4px 2px 8px;
-          font-family:"Crimson Pro",Georgia,serif; font-style:italic; font-size:9.6px;
-          line-height:1.3; color:var(--ink); }
-  .quote cite{ display:block; font-style:normal; font-family:"Courier Prime",monospace;
-               font-size:7px; letter-spacing:.13em; text-transform:uppercase;
-               color:var(--ink-soft); margin-top:2px; }
+  .quote{ position:relative; border-left:2px solid var(--marigold); padding:1px 2px 1px 7px;
+          font-family:"Crimson Pro",Georgia,serif; font-style:italic; font-size:8.1px;
+          line-height:1.3; color:var(--ink); display:flex; align-items:baseline; gap:6px; }
+  .quote cite{ flex:none; font-style:normal; font-family:"Courier Prime",monospace;
+               font-size:6.2px; letter-spacing:.12em; text-transform:uppercase;
+               color:var(--ink-faint); }
 
   /* ---------- health ---------- */
-  .steps-row{ display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }
-  .steps-row .n{ font-family:"Caveat",cursive; font-weight:700; font-size:25px; line-height:1;
+  .steps-row{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin-bottom:3px; }
+  .steps-row .n{ font-family:"Caveat",cursive; font-weight:700; font-size:22px; line-height:1;
                  color:var(--ink); font-variant-numeric:tabular-nums; }
   .steps-row .u{ font-size:7px; text-transform:uppercase; letter-spacing:.14em;
                  color:var(--ink-soft); }
-  .equiv{ font-family:"Caveat",cursive; font-size:14px; color:var(--teal); line-height:1.1; }
+  .equiv{ font-family:"Caveat",cursive; font-size:12.5px; color:var(--teal); line-height:1.15; }
   /* two charts, two different questions: how the month went day to day, and
      what shape the week has. Separate charts rather than one dual-axis one. */
-  .charts{ display:grid; grid-template-columns:1.42fr 1fr; gap:13px; align-items:end; }
+  .charts{ display:grid; grid-template-columns:195px 1fr; gap:13px; align-items:end; }
   .ch figcaption{ display:flex; justify-content:space-between; align-items:baseline;
                   gap:6px; white-space:nowrap; font-size:6.4px; font-weight:700; text-transform:uppercase;
                   letter-spacing:.15em; color:var(--ink-soft); margin-bottom:1px; }
@@ -439,10 +439,10 @@ const DATA = {
   .snap img{ width:100%; height:100%; object-fit:cover; display:block; background:#EDE8DC; }
 
   /* the sticky note, stuck over the corner of the reading section */
-  .read-body{ display:grid; grid-template-columns:1fr 146px; gap:11px; align-items:start; }
-  .read-left{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .read-body{ display:grid; grid-template-columns:1fr 146px; gap:11px; align-items:stretch; }
+  .read-left{ display:flex; flex-direction:column; gap:5px; min-width:0; }
   .sticky{ position:relative; background:#F3E3A2; color:var(--ink); padding:7px 8px 10px;
-           font-family:"Caveat",cursive; font-size:10.4px; line-height:1.24;
+           font-family:"Caveat",cursive; font-size:12.4px; line-height:1.3;
            transform:rotate(1.7deg); box-shadow:1px 1.5px 2.5px rgba(40,50,59,.24); }
   .sticky::after{ content:""; position:absolute; right:0; bottom:0; width:0; height:0;
                   border-style:solid; border-width:0 0 10px 10px;
@@ -582,12 +582,13 @@ const DATA = {
   /* ---- small hand-drawn parts ---- */
   const STAR = "6,1 7.29,4.42 10.95,4.59 8.09,6.88 9.06,10.41 6,8.4 2.94,10.41 3.91,6.88 1.05,4.59 4.71,4.42";
   let uid = 0;
-  function stars(rating, color){
+  function stars(rating, color, drawW){
     const id = "clip" + (++uid);
     const w  = Math.max(0, Math.min(5, rating)) / 5 * 62;
     const row = [0,1,2,3,4].map(i =>
       `<polygon points="${STAR}" transform="translate(${i*12.5},0)"/>`).join("");
-    return `<svg viewBox="0 0 62 12" width="62" height="12" role="img" aria-label="${rating.toFixed(2)} of 5">
+    const dw = drawW || 62;
+    return `<svg viewBox="0 0 62 12" width="${dw}" height="${(dw / 62 * 12).toFixed(1)}" role="img" aria-label="${rating.toFixed(2)} of 5">
       <defs><clipPath id="${id}"><rect x="0" y="0" width="${w.toFixed(2)}" height="12"/></clipPath>
       <g id="g${id}">${row}</g></defs>
       <use href="#g${id}" fill="none" stroke="${color}" stroke-width="0.9" opacity="0.55"/>
@@ -614,20 +615,6 @@ const DATA = {
     }).join("");
     return `<svg class="spines" viewBox="0 0 ${w} ${H}" width="${w}" height="${H}" aria-hidden="true">
       ${body}<line x1="0" y1="${H-0.4}" x2="${w}" y2="${H-0.4}" stroke="var(--ink)" stroke-width="0.9"/></svg>`;
-  }
-  /* tally marks, five to a gate */
-  function tally(n){
-    const gates = Math.floor(n/5), rest = n % 5, GW = 15;
-    const w = Math.max(GW, gates*GW + (rest ? rest*3 + 4 : 0));
-    let out = "", x = 0;
-    for (let g=0; g<gates; g++){
-      for (let i=0;i<4;i++) out += `<line x1="${x+i*3}" y1="1" x2="${x+i*3}" y2="12"/>`;
-      out += `<line x1="${x-1}" y1="12" x2="${x+10}" y2="1"/>`;
-      x += GW;
-    }
-    for (let i=0;i<rest;i++) out += `<line x1="${x+i*3}" y1="1" x2="${x+i*3}" y2="12"/>`;
-    return `<svg viewBox="0 0 ${w} 13" width="${w}" height="13" aria-hidden="true"
-      stroke="var(--ink)" stroke-width="1.05" stroke-linecap="round">${out}</svg>`;
   }
   /* One bar per day of the month. A day with no reading is drawn as a stub on
      the baseline rather than skipped or interpolated — a gap in the export is
@@ -709,7 +696,8 @@ const DATA = {
     const BW = Math.min(14, step * 0.52);
     const JIT = [0, -0.34, 0.34, -0.62, 0.62, -0.17, 0.17];   // stable, not random
 
-    let boxes = "", dots = "", labs = "";
+    let boxes = "", dots = "", labs = "", means = "";
+    const meanPts = [];
     days.forEach((d, i) => {
       const cx = step * (i + 0.5);
       const b = (base && base[i] && base[i].box) || null;
@@ -727,25 +715,38 @@ const DATA = {
       (d.values || []).forEach((v, k) => {
         const x = cx + (JIT[k % JIT.length]) * BW;
         if (v > hi){
-          dots += `<path d="M${(x - 2.4).toFixed(1)} ${(Y(hi) + 1.4).toFixed(1)}
-            L${x.toFixed(1)} ${(Y(hi) - 2).toFixed(1)} L${(x + 2.4).toFixed(1)} ${(Y(hi) + 1.4).toFixed(1)}Z"
+          dots += `<path d="M${(x - 2.4).toFixed(1)} ${(Y(hi) + 4.4).toFixed(1)}
+            L${x.toFixed(1)} ${(Y(hi) + 1).toFixed(1)} L${(x + 2.4).toFixed(1)} ${(Y(hi) + 4.4).toFixed(1)}Z"
             fill="var(--teal)" stroke="var(--paper)" stroke-width=".7"
             ><title>${esc(d.day)} this month: ${v} h — above the top of the scale</title></path>`;
         } else {
-          dots += `<circle cx="${x.toFixed(1)}" cy="${Y(v).toFixed(1)}" r="1.85" fill="var(--teal)"
-            stroke="var(--paper)" stroke-width=".8"><title>${esc(d.day)} this month: ${v} h</title></circle>`;
+          dots += `<circle cx="${x.toFixed(1)}" cy="${Y(v).toFixed(1)}" r="1.7" fill="var(--teal)"
+            fill-opacity=".45"><title>${esc(d.day)} this month: ${v} h</title></circle>`;
         }
       });
+      // the month's average for this weekday, which the line joins up
+      const m = Number(d.sleep);
+      if (m > 0){
+        const my = Y(Math.min(m, hi));
+        meanPts.push([cx, my]);
+        means += `<circle cx="${cx.toFixed(1)}" cy="${my.toFixed(1)}" r="2.6" fill="var(--teal)"
+          stroke="var(--paper)" stroke-width="1.1"
+          ><title>${esc(d.day)} average this month: ${m.toFixed(2)} h</title></circle>`;
+      }
       labs += `<text class="axd" x="${cx.toFixed(1)}" y="${h - 0.5}" text-anchor="middle"
         >${esc(String(d.day).charAt(0))}</text>`;
     });
+    const meanPath = meanPts.map((pt, i) => (i ? "L" : "M") + pt[0].toFixed(1) + " " + pt[1].toFixed(1)).join(" ");
     const six = Y(6);
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
        aria-label="Hours slept by weekday: each night this month as a dot, over a box of the usual range across two years">
       <line x1="0" y1="${six.toFixed(1)}" x2="${w - 13}" y2="${six.toFixed(1)}"
             stroke="var(--marigold)" stroke-width="1" stroke-dasharray="3 2.5"/>
       <text class="axn" x="${w}" y="${(six + 2).toFixed(1)}" text-anchor="end">6h</text>
-      ${boxes}${dots}${labs}
+      ${boxes}${dots}
+      <path d="${meanPath}" fill="none" stroke="var(--teal)" stroke-width="1.6"
+            stroke-linejoin="round" stroke-linecap="round"/>
+      ${means}${labs}
     </svg>`;
   }
 
@@ -856,52 +857,52 @@ const DATA = {
 
     <section class="sec">
       ${head(ICON.book, "Reading")}
-      <div class="read-top">
-        ${spines(books)}
-        <span class="stat"><span class="n">${nBooks}</span><span class="u">${nBooks === 1 ? "book" : "books"}</span></span>
-        <span class="stat"><span class="n alt">${num(totalPages)}</span><span class="u">pages</span></span>
-      </div>
-      <div class="scores">
-        <span class="score"><span class="who">Mine</span>${stars(avgMine,"var(--marigold)")}<span class="val" style="color:var(--marigold)">${avgMine.toFixed(2)}</span></span>
-        <span class="score"><span class="who">Goodreads</span>${stars(avgGR,"var(--ink-soft)")}<span class="val" style="color:var(--ink-soft)">${avgGR.toFixed(2)}</span></span>
-      </div>
       <div class="read-body">
         <div class="read-left">
+          <div class="read-top">
+            ${spines(books)}
+            <span class="stat"><span class="n">${nBooks}</span><span class="u">${nBooks === 1 ? "book" : "books"}</span></span>
+            <span class="stat"><span class="n alt">${num(totalPages)}</span><span class="u">pages</span></span>
+          </div>
+          <div class="scores">
+            <span class="score"><span class="who">Mine</span>${stars(avgMine,"var(--marigold)",54)}<span class="val" style="color:var(--marigold)">${avgMine.toFixed(2)}</span></span>
+            <span class="score"><span class="who">Goodreads</span>${stars(avgGR,"var(--ink-soft)",54)}<span class="val" style="color:var(--ink-soft)">${avgGR.toFixed(2)}</span></span>
+          </div>
           <div class="picks">
             <div class="pick"><span class="mk" style="color:var(--clay)">&#9829;</span>
               <span><b>${esc((r.favorite||{}).title)}</b>${(r.favorite||{}).note ? ` &mdash; <i>${esc(r.favorite.note)}</i>` : ""}</span></div>
             <div class="pick"><span class="mk" style="color:var(--ink-faint)">&times;</span>
               <span><b>${esc((r.leastFavorite||{}).title)}</b>${(r.leastFavorite||{}).note ? ` &mdash; <i>${esc(r.leastFavorite.note)}</i>` : ""}</span></div>
           </div>
-          ${(r.quote && r.quote.text) ? `<blockquote class="quote">&ldquo;${esc(r.quote.text)}&rdquo;
-            <cite>${esc(r.quote.book)}</cite></blockquote>` : ""}
         </div>
         ${r.sticky ? `<div class="sticky">${esc(r.sticky)}</div>` : ""}
       </div>
+      ${(r.quote && r.quote.text) ? `<blockquote class="quote">&ldquo;${esc(r.quote.text)}&rdquo;
+        <cite>${esc(r.quote.book)}</cite></blockquote>` : ""}
     </section>
 
     <section class="sec">
       ${head(ICON.shoe, "Health")}
-      <div class="steps-row">
-        <span class="n">${num(h.steps)}</span><span class="u">steps</span>
-        <span class="equiv">&#8776; ${esc(h.stepsEquivalent)}</span>
-      </div>
       ${(h.stepSeries && h.stepSeries.length) ? `
       <div class="charts">
         <figure class="ch">
+          <div class="steps-row">
+            <span class="n">${num(h.steps)}</span><span class="u">steps</span>
+            <span class="equiv">&#8776; ${esc(h.stepsEquivalent)}</span>
+          </div>
           <figcaption>Steps by day<em>avg ${num(Math.round(h.stepMean || 0))}</em></figcaption>
-          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 222, 46, h.mark)}
+          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 195, 46, h.mark)}
         </figure>
         <figure class="ch">
-          <figcaption>Sleep by weekday<em>dots = Sept &middot; box = usual</em></figcaption>
-          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 193, 46)}
+          <figcaption>Sleep by weekday<em>Sept nights &amp; avg &middot; box = usual</em></figcaption>
+          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 88)}
         </figure>
       </div>` : ""}
 
       <div class="hstats">
         <span><b>${num(h.hoursSlept)}</b> hrs slept</span>
         <span><b>${nights}</b> of ${num(h.nightsRecorded || days)} nights over 6h</span>
-        <span><b>${num(h.gymWorkouts)}</b> workouts ${tally(Number(h.gymWorkouts) || 0)}</span>
+        <span><b>${num(h.gymWorkouts)}</b> workouts</span>
       </div>
       ${h.note ? `<div class="hnote">${MOON}<span>${esc(h.note)}</span></div>` : ""}
     </section>
