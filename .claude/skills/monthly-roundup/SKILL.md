@@ -123,8 +123,11 @@ block at the top of `template.html`:
   // steps, hoursSlept, nightsOver6, the series and the weekday shape are all
   // filled in by --health; supply only these two
   "health": {"stepsEquivalent": "", "gymWorkouts": 0, "note": "",
-             // optional: ring a run of days on the steps chart and name it
-             "mark": {"from": 28, "to": 30, "label": "Cage move"}},
+             // optional: ring runs of days on the steps chart and name them.
+             // Give each its own colour from the validated set (--cat1..--cat6,
+             // --clay); two rings in the same colour read as one thing.
+             "marks": [{"from": 1, "to": 2, "label": "NYC", "color": "var(--cat4)"},
+                       {"from": 28, "to": 30, "label": "Cage move", "color": "var(--clay)"}]},
   "family": {"lilahSkill": "", "highlights": ["", "", ""], "celebration": ""},
   "work": {"accomplishment": "", "carryover": ""},
 
@@ -264,6 +267,11 @@ up. Two things there are load-bearing:
 - The sleep chart is the page's centrepiece and gets the wider, taller half of
   the charts row; the step headline wraps inside the steps column rather than
   running full width, which is what buys that space.
+- The weekday line joins **medians**, not means. With four or five nights to a
+  weekday one unusual night rewrites the average: September's 13h38 on Yom
+  Kippur pulled Monday's mean to 7.98 against a 6.47 median, so the mean was
+  describing the holiday rather than the Mondays. Every other weekday moved
+  less than 0.15h, so the median costs nothing and fixes the one case.
 - That chart scales to the baseline's reach, not to the month's extremes. One
   13-hour night would otherwise flatten every other weekday; anything above
   the top is pinned there and drawn as a caret.

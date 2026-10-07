@@ -44,12 +44,21 @@ const DATA = {
   "health": {
     "stepsEquivalent": "137 miles — Melbourne to Orlando and back",
     "gymWorkouts": 14,
-    "note": "Fridays ran 5h09 and Sundays 8h21 — the same short-Friday shape as the past two years.",
-    "mark": {
-      "from": 28,
-      "to": 30,
-      "label": "Cage move"
-    },
+    "note": "Fridays ran 5h09 and Sundays 8h28 — the same short-Friday shape as the past two years.",
+    "marks": [
+      {
+        "from": 1,
+        "to": 2,
+        "label": "NYC",
+        "color": "var(--cat4)"
+      },
+      {
+        "from": 28,
+        "to": 30,
+        "label": "Cage move",
+        "color": "var(--clay)"
+      }
+    ],
     "steps": 273554,
     "stepSeries": [
       15701,
@@ -439,10 +448,10 @@ const DATA = {
   .snap img{ width:100%; height:100%; object-fit:cover; display:block; background:#EDE8DC; }
 
   /* the sticky note, stuck over the corner of the reading section */
-  .read-body{ display:grid; grid-template-columns:1fr 146px; gap:11px; align-items:stretch; }
+  .read-body{ display:grid; grid-template-columns:1fr 146px; gap:11px; align-items:start; }
   .read-left{ display:flex; flex-direction:column; gap:5px; min-width:0; }
   .sticky{ position:relative; background:#F3E3A2; color:var(--ink); padding:7px 8px 10px;
-           font-family:"Caveat",cursive; font-size:12.4px; line-height:1.3;
+           font-family:"Caveat",cursive; font-size:11.2px; line-height:1.26;
            transform:rotate(1.7deg); box-shadow:1px 1.5px 2.5px rgba(40,50,59,.24); }
   .sticky::after{ content:""; position:absolute; right:0; bottom:0; width:0; height:0;
                   border-style:solid; border-width:0 0 10px 10px;
@@ -619,13 +628,14 @@ const DATA = {
   /* One bar per day of the month. A day with no reading is drawn as a stub on
      the baseline rather than skipped or interpolated — a gap in the export is
      worth seeing. */
-  function stepsChart(series, avg, w, h, mark){
+  function stepsChart(series, avg, w, h, marksIn){
+    const marks = Array.isArray(marksIn) ? marksIn : (marksIn ? [marksIn] : []);
     const n = series.length, gap = 2;
     const bw = Math.max(2.5, (w - gap * (n - 1)) / n);
     const vals = series.filter(v => v != null);
     if (!vals.length) return "";
     const top = Math.max.apply(null, vals);
-    const lane = mark ? 11 : 0;                  // headroom for the ring's label
+    const lane = marks.length ? 11 : 0;          // headroom for the ring labels
     const plot = h - 7;
     let bars = "";
     series.forEach((v, i) => {
@@ -642,24 +652,30 @@ const DATA = {
     });
     const ay = plot - (avg / top) * (plot - lane);
 
-    /* a ring drawn round a run of days, the way you would circle them by hand */
+    /* rings drawn round runs of days, the way you would circle them by hand.
+       The label goes on whichever side of the ring has room. */
     let ring = "";
-    if (mark){
-      const a = Math.max(1, Number(mark.from)) - 1, b = Math.min(n, Number(mark.to)) - 1;
+    marks.forEach(mk => {
+      const a = Math.max(1, Number(mk.from)) - 1, b = Math.min(n, Number(mk.to)) - 1;
       const x0 = a * (bw + gap) - 2.5, x1 = b * (bw + gap) + bw + 2.5;
       const cx = (x0 + x1) / 2, rx = (x1 - x0) / 2, cy = plot - (plot - lane) / 2 + 1;
       const ry = (plot - lane) / 2 + 4;
-      ring = `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}"
-          ry="${ry.toFixed(1)}" fill="none" stroke="var(--clay)" stroke-width="1.1"
+      const col = mk.color || "var(--clay)";
+      const left = cx < w / 2;                       // ring near the start → label to its right
+      const lx = left ? x1 + 4 : x0 - 4;
+      const tie = left ? x1 + 3 : x0 - 3;
+      ring += `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}"
+          ry="${ry.toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.1"
           transform="rotate(-4 ${cx.toFixed(1)} ${cy.toFixed(1)})" opacity=".95"/>
-        <text class="axm" x="${(x0 - 4).toFixed(1)}" y="6.5" text-anchor="end">${esc(mark.label || "")}</text>
-        <path d="M${(x0 - 3).toFixed(1)} 8 Q ${(cx - rx * 0.4).toFixed(1)} 9.5 ${(cx - rx * 0.55).toFixed(1)} ${(cy - ry + 1).toFixed(1)}"
-          fill="none" stroke="var(--clay)" stroke-width=".7" opacity=".8"/>`;
-    }
+        <text class="axm" x="${lx.toFixed(1)}" y="6.5" fill="${col}"
+          text-anchor="${left ? "start" : "end"}">${esc(mk.label || "")}</text>
+        <path d="M${tie.toFixed(1)} 8 Q ${(cx + (left ? rx * 0.4 : -rx * 0.4)).toFixed(1)} 9.5 ${(cx + (left ? rx * 0.55 : -rx * 0.55)).toFixed(1)} ${(cy - ry + 1).toFixed(1)}"
+          fill="none" stroke="${col}" stroke-width=".7" opacity=".8"/>`;
+    });
 
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
        aria-label="Daily steps across the month, averaging ${num(Math.round(avg))}${
-         mark ? `; days ${mark.from} to ${mark.to} ringed: ${esc(mark.label || "")}` : ""}">
+         marks.map(mk => `; days ${mk.from} to ${mk.to} ringed: ${esc(mk.label || "")}`).join("")}">
       ${bars}
       <line x1="0" y1="${ay.toFixed(1)}" x2="${w}" y2="${ay.toFixed(1)}"
             stroke="var(--marigold)" stroke-width="1" stroke-dasharray="3 2.5"/>
@@ -678,6 +694,11 @@ const DATA = {
      data, where there are ~50 nights to take quartiles from — with this
      month's four or five nights scattered on top. A box drawn from one month
      alone would be quartiles of four points, which is mostly noise. */
+  function median(arr){
+    if (!arr || !arr.length) return 0;
+    const a = arr.slice().sort((x, y) => x - y), m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
   function weekdayChart(days, base, w, h){
     const every = [];
     days.forEach(d => (d.values || []).forEach(v => every.push(v)));
@@ -724,14 +745,16 @@ const DATA = {
             fill-opacity=".45"><title>${esc(d.day)} this month: ${v} h</title></circle>`;
         }
       });
-      // the month's average for this weekday, which the line joins up
-      const m = Number(d.sleep);
+      // The line joins medians, not means. A single 13h38 night (Yom Kippur,
+      // 21 Sept) dragged Monday's mean to 7.98 against a 6.47 median — the
+      // mean was describing the holiday, not the Mondays.
+      const m = median(d.values);
       if (m > 0){
         const my = Y(Math.min(m, hi));
         meanPts.push([cx, my]);
         means += `<circle cx="${cx.toFixed(1)}" cy="${my.toFixed(1)}" r="2.6" fill="var(--teal)"
           stroke="var(--paper)" stroke-width="1.1"
-          ><title>${esc(d.day)} average this month: ${m.toFixed(2)} h</title></circle>`;
+          ><title>${esc(d.day)} median this month: ${m.toFixed(2)} h</title></circle>`;
       }
       labs += `<text class="axd" x="${cx.toFixed(1)}" y="${h - 0.5}" text-anchor="middle"
         >${esc(String(d.day).charAt(0))}</text>`;
@@ -739,7 +762,7 @@ const DATA = {
     const meanPath = meanPts.map((pt, i) => (i ? "L" : "M") + pt[0].toFixed(1) + " " + pt[1].toFixed(1)).join(" ");
     const six = Y(6);
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
-       aria-label="Hours slept by weekday: each night this month as a dot, over a box of the usual range across two years">
+       aria-label="Hours slept by weekday: each night this month as a dot with the median joined up, over a box of the usual range across two years">
       <line x1="0" y1="${six.toFixed(1)}" x2="${w - 13}" y2="${six.toFixed(1)}"
             stroke="var(--marigold)" stroke-width="1" stroke-dasharray="3 2.5"/>
       <text class="axn" x="${w}" y="${(six + 2).toFixed(1)}" text-anchor="end">6h</text>
@@ -891,10 +914,10 @@ const DATA = {
             <span class="equiv">&#8776; ${esc(h.stepsEquivalent)}</span>
           </div>
           <figcaption>Steps by day<em>avg ${num(Math.round(h.stepMean || 0))}</em></figcaption>
-          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 195, 46, h.mark)}
+          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 195, 46, h.marks || h.mark)}
         </figure>
         <figure class="ch">
-          <figcaption>Sleep by weekday<em>Sept nights &amp; avg &middot; box = usual</em></figcaption>
+          <figcaption>Sleep by weekday<em>Sept nights &amp; median &middot; box = usual</em></figcaption>
           ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 88)}
         </figure>
       </div>` : ""}
