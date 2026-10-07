@@ -126,8 +126,10 @@ block at the top of `template.html`:
              // optional: ring runs of days on the steps chart and name them.
              // Give each its own colour from the validated set (--cat1..--cat6,
              // --clay); two rings in the same colour read as one thing.
-             "marks": [{"from": 1, "to": 2, "label": "NYC", "color": "var(--cat4)"},
-                       {"from": 28, "to": 30, "label": "Cage move", "color": "var(--clay)"}]},
+             "marks": [{"from": 1, "to": 2, "label": "NYC", "color": "var(--purple)"},
+                       {"from": 28, "to": 30, "label": "Cage move", "color": "var(--clay)"}],
+             // optional: name a night that runs off the top of the sleep scale
+             "sleepNotes": [{"day": "Mon", "label": "Yom Kippur"}]},
   "family": {"lilahSkill": "", "highlights": ["", "", ""], "celebration": ""},
   "work": {"accomplishment": "", "carryover": ""},
 
@@ -278,6 +280,12 @@ up. Two things there are load-bearing:
 - `sizePhotos()` runs once immediately and again on `document.fonts.ready`.
   Measuring against fallback metrics pins the wrong height and the text
   reflows under it — that is a real bug, not belt-and-braces.
+- Colours used together must be checked together, not assumed from the set.
+  `--cat6` plum against `--clay` measures deltaE 12.6 for normal vision — too
+  close to ring two things on one chart — which is why `--purple` exists.
+- Chart label colours must be set with `style="fill:…"`, not a `fill`
+  attribute: `.chart text` is a CSS rule and silently wins over the attribute,
+  so an attribute-coloured label comes out the default clay.
 - Book spine and shelf chip colours (`--cat1`..`--cat6`) are a colour-only
   legend and were validated for colour-vision separation. If you add a
   seventh, re-run the dataviz palette validator rather than eyeballing it.

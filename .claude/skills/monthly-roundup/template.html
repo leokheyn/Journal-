@@ -81,6 +81,7 @@ const DATA = {
        indistinguishable). Structural accents above are unchanged. */
     --cat1:#008F82; --cat2:#E0A72B; --cat3:#BE4A3C;
     --cat4:#44589E; --cat5:#6E8B2E; --cat6:#93407F;
+    --purple:#6B3FA0;       /* for annotations beside clay; validated apart */
   }
 
   body{ background:var(--desk); color:var(--chrome-ink);
@@ -433,7 +434,7 @@ const DATA = {
       ring += `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}"
           ry="${ry.toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.1"
           transform="rotate(-4 ${cx.toFixed(1)} ${cy.toFixed(1)})" opacity=".95"/>
-        <text class="axm" x="${lx.toFixed(1)}" y="6.5" fill="${col}"
+        <text class="axm" x="${lx.toFixed(1)}" y="6.5" style="fill:${col}"
           text-anchor="${left ? "start" : "end"}">${esc(mk.label || "")}</text>
         <path d="M${tie.toFixed(1)} 8 Q ${(cx + (left ? rx * 0.4 : -rx * 0.4)).toFixed(1)} 9.5 ${(cx + (left ? rx * 0.55 : -rx * 0.55)).toFixed(1)} ${(cy - ry + 1).toFixed(1)}"
           fill="none" stroke="${col}" stroke-width=".7" opacity=".8"/>`;
@@ -465,7 +466,7 @@ const DATA = {
     const a = arr.slice().sort((x, y) => x - y), m = a.length >> 1;
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   }
-  function weekdayChart(days, base, w, h){
+  function weekdayChart(days, base, w, h, notes){
     const every = [];
     days.forEach(d => (d.values || []).forEach(v => every.push(v)));
     (base || []).forEach(b => { if (b.box) every.push(b.box.lo, b.box.hi); });
@@ -484,6 +485,7 @@ const DATA = {
     const JIT = [0, -0.34, 0.34, -0.62, 0.62, -0.17, 0.17];   // stable, not random
 
     let boxes = "", dots = "", labs = "", means = "";
+    const named = {};
     const meanPts = [];
     days.forEach((d, i) => {
       const cx = step * (i + 0.5);
@@ -506,6 +508,14 @@ const DATA = {
             L${x.toFixed(1)} ${(Y(hi) + 1).toFixed(1)} L${(x + 2.4).toFixed(1)} ${(Y(hi) + 4.4).toFixed(1)}Z"
             fill="var(--teal)" stroke="var(--paper)" stroke-width=".7"
             ><title>${esc(d.day)} this month: ${v} h — above the top of the scale</title></path>`;
+          const nt = (notes || []).filter(z => z && z.day === d.day)[0];
+          if (nt && !named[d.day]){
+            named[d.day] = true;
+            const toRight = x < w / 2;
+            dots += `<text class="axm" x="${(x + (toRight ? 4.5 : -4.5)).toFixed(1)}"
+              y="${(Y(hi) + 5.4).toFixed(1)}" text-anchor="${toRight ? "start" : "end"}"
+              style="fill:${nt.color || "var(--teal)"}">${esc(nt.label)}</text>`;
+          }
         } else {
           dots += `<circle cx="${x.toFixed(1)}" cy="${Y(v).toFixed(1)}" r="1.7" fill="var(--teal)"
             fill-opacity=".45"><title>${esc(d.day)} this month: ${v} h</title></circle>`;
@@ -684,7 +694,7 @@ const DATA = {
         </figure>
         <figure class="ch">
           <figcaption>Sleep by weekday<em>Sept nights &amp; median &middot; box = usual</em></figcaption>
-          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 88)}
+          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 88, h.sleepNotes)}
         </figure>
       </div>` : ""}
 
