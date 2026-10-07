@@ -54,7 +54,7 @@ const ROOT = path.resolve(__dirname, "..", "..", "..");
     return {
       pageH: pg.offsetHeight, contentH: pg.scrollHeight,
       overflow: pg.scrollHeight - pg.clientHeight,
-      photo: px(document.querySelector(".polaroid .frame")?.getBoundingClientRect().height || 0),
+      photo: px(document.querySelector(".snap")?.getBoundingClientRect().height || 0),
       titleLines: (() => { const t = document.querySelector(".title");
         return t ? Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight)) : 0; })(),
       spills: spills.filter(s => !seen.has(s.el) && seen.add(s.el)).slice(0, 8),

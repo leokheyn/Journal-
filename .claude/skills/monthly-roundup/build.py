@@ -15,6 +15,7 @@ conversation.
 """
 
 import argparse
+import base64
 import json
 import pathlib
 import re
@@ -69,6 +70,8 @@ def main():
     ap.add_argument("--data", required=True, help="JSON file holding the DATA object")
     ap.add_argument("--photos", default="", help="directory of photo docs from read_db out_dir")
     ap.add_argument("--health", default="", help="JSON from health.py, if the month has an export")
+    ap.add_argument("--extra", nargs="*", default=[],
+                    help="extra image files to append to the photo strip")
     ap.add_argument("--key", required=True, help="month key, e.g. 2026-09")
     ap.add_argument("--out", required=True, help="path to write the finished page to")
     args = ap.parse_args()
@@ -88,7 +91,10 @@ def main():
         health["hoursSlept"] = hx["sleep"]["totalH"]
         health["nightsOver6"] = hx["sleep"]["nightsOver6"]
         health["nightsRecorded"] = hx["sleep"]["recorded"]
-        health["weekday"] = [{"day": w["day"], "sleep": w["sleep"]} for w in hx["weekday"]]
+        health["weekday"] = [{"day": w["day"], "sleep": w["sleep"],
+                              "values": w.get("values", [])} for w in hx["weekday"]]
+        health["weekdayBase"] = [{"day": b["day"], "box": b.get("box")}
+                                 for b in hx["baseline"]["weekday"]]
         print(f"  health: {hx['steps']['total']:,} steps, {hx['sleep']['totalH']}h sleep "
               f"over {hx['sleep']['recorded']}/{hx['daysInMonth']} nights")
 
@@ -101,11 +107,29 @@ def main():
         data["daysInMonth"] = calendar.monthrange(year, month_num)[1]
     data["sample"] = False
 
+    # Photos become one ordered strip. The two the form collects come first,
+    # then any extras handed in on the command line. Everything is embedded as
+    # a data URI so the page stays self-contained.
     family = data.setdefault("family", {})
-    for slot, field in (("lilah", "lilahPhoto"), ("activity", "activityPhoto")):
+    shots = []
+    for slot in ("lilah", "activity"):
         src = load_photo(args.photos, args.key, slot)
-        family.setdefault(field, {})["src"] = src
-        print(f"  {slot}: {'photo spliced in (%d KB)' % (len(src) // 1024) if src else 'no photo — frame left empty'}")
+        if src:
+            shots.append({"src": src, "alt": f"Photo from the form ({slot})"})
+            print(f"  {slot}: {len(src) // 1024} KB from the form")
+        else:
+            print(f"  {slot}: no photo")
+    for extra in args.extra or []:
+        path = pathlib.Path(extra)
+        if not path.exists():
+            print(f"  ! missing extra photo {extra}", file=sys.stderr)
+            continue
+        mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+        b64 = base64.b64encode(path.read_bytes()).decode()
+        shots.append({"src": f"data:{mime};base64,{b64}", "alt": path.stem})
+        print(f"  extra: {path.name}, {len(b64) // 1024} KB")
+    if shots:
+        family["photos"] = shots
 
     template = TEMPLATE.read_text()
     start = template.index(START)

@@ -117,13 +117,15 @@ block at the top of `template.html`:
     "books": [{"title": "", "author": "", "pages": 0, "goodreads": 0.0, "mine": 0}],
     "favorite":      {"title": "", "note": ""},
     "leastFavorite": {"title": "", "note": ""},
-    "quote": {"text": "", "book": ""}
+    "quote": {"text": "", "book": ""},
+    "sticky": ""          // optional: a note stuck over the reading section
   },
   // steps, hoursSlept, nightsOver6, the series and the weekday shape are all
   // filled in by --health; supply only these two
-  "health": {"stepsEquivalent": "", "gymWorkouts": 0, "note": ""},
-  "family": {"lilahSkill": "", "lilahPhoto": {"caption": ""},
-             "activity": {"title": "", "caption": ""}, "celebration": ""},
+  "health": {"stepsEquivalent": "", "gymWorkouts": 0, "note": "",
+             // optional: ring a run of days on the steps chart and name it
+             "mark": {"from": 28, "to": 30, "label": "Cage move"}},
+  "family": {"lilahSkill": "", "highlights": ["", "", ""], "celebration": ""},
   "work": {"accomplishment": "", "carryover": ""},
 
   // optional — omit the whole key and no weather band is drawn
@@ -155,9 +157,10 @@ lightning strike counts are not published per-city — do not invent one.
 Mapping from the form's fields: `fav`/`favNote` → `favorite`,
 `least`/`leastNote` → `leastFavorite`, `quote`/`quoteBook` → `quote`,
 `sleep` → `hoursSlept`, `nights` → `nightsOver6`, `gym` → `gymWorkouts`,
-`skill` → `lilahSkill`, `capLilah` → `lilahPhoto.caption`,
-`activity`/`capActivity` → `activity.title`/`activity.caption`,
-`win` → `accomplishment`, `carry` → `carryover`. Leave `month`, `year`,
+`skill` → `lilahSkill`, `win` → `accomplishment`, `carry` → `carryover`
+(one line per item — each becomes its own `>`). The form's `activity` and the
+photo captions are no longer drawn: family outings go in `highlights` as a
+short numbered list, and the photo strip runs without captions. Leave `month`, `year`,
 `daysInMonth`, `sample` and the photo `src` fields out — `build.py` fills them.
 
 Pass their words through as written. Tighten only what overflows: the two
@@ -183,6 +186,13 @@ python3 .claude/skills/monthly-roundup/build.py \
   --key    <YYYY-MM> \
   --out    roundups/<YYYY-MM>.html
 ```
+
+**Photos** are one strip. The two from the form come first; anything else the
+user attaches is appended with `--extra a.jpg b.jpg`. Downscale attachments to
+about 900px before passing them in, or the page balloons.
+
+**The shelf** only draws with three or more books — with two it is just the
+picks again.
 
 ## 5. Make the PDF
 
@@ -246,9 +256,16 @@ up. Two things there are load-bearing:
   pixels. Don't replace it with `flex: 1`: flex slack is distributed
   differently in Chromium's PDF pass, which silently clipped the page.
 - The two health charts answer different questions and share no axis. Steps
-  are bars from zero; weekday sleep is a connected dot plot on a 4–9h scale,
-  because bars from zero flatten a 5-to-8 hour spread into a few pixels. Don't
-  merge them into one dual-axis chart.
+  are bars from zero; weekday sleep is a box of the two-year usual range per
+  weekday with this month's individual nights jittered over it. Don't merge
+  them into one dual-axis chart, and don't draw the box from a single month —
+  quartiles of four nights are noise, which is why the box uses the baseline.
+- That chart scales to the baseline's reach, not to the month's extremes. One
+  13-hour night would otherwise flatten every other weekday; anything above
+  the top is pinned there and drawn as a caret.
+- `sizePhotos()` runs once immediately and again on `document.fonts.ready`.
+  Measuring against fallback metrics pins the wrong height and the text
+  reflows under it — that is a real bug, not belt-and-braces.
 - Book spine and shelf chip colours (`--cat1`..`--cat6`) are a colour-only
   legend and were validated for colour-vision separation. If you add a
   seventh, re-run the dataviz palette validator rather than eyeballing it.

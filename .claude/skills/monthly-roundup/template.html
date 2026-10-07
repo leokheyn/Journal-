@@ -162,8 +162,8 @@ const DATA = {
   .pick i{ color:var(--ink-soft); font-style:italic; }
 
   .quote{ position:relative; border-left:2px solid var(--marigold); padding:2px 4px 2px 8px;
-          font-family:"Crimson Pro",Georgia,serif; font-style:italic; font-size:11px;
-          line-height:1.32; color:var(--ink); }
+          font-family:"Crimson Pro",Georgia,serif; font-style:italic; font-size:9.6px;
+          line-height:1.3; color:var(--ink); }
   .quote cite{ display:block; font-style:normal; font-family:"Courier Prime",monospace;
                font-size:7px; letter-spacing:.13em; text-transform:uppercase;
                color:var(--ink-soft); margin-top:2px; }
@@ -179,13 +179,16 @@ const DATA = {
      what shape the week has. Separate charts rather than one dual-axis one. */
   .charts{ display:grid; grid-template-columns:1.42fr 1fr; gap:13px; align-items:end; }
   .ch figcaption{ display:flex; justify-content:space-between; align-items:baseline;
-                  gap:6px; font-size:6.4px; font-weight:700; text-transform:uppercase;
+                  gap:6px; white-space:nowrap; font-size:6.4px; font-weight:700; text-transform:uppercase;
                   letter-spacing:.15em; color:var(--ink-soft); margin-bottom:1px; }
   .ch figcaption em{ font-style:normal; font-weight:400; letter-spacing:.05em;
                      text-transform:none; color:var(--ink-faint); white-space:nowrap; }
   .chart{ display:block; width:100%; height:auto; overflow:visible; }
   .chart text{ font-family:"Courier Prime", ui-monospace, monospace; font-size:5.4px;
                letter-spacing:.04em; fill:var(--ink-faint); }
+  .chart text.axd{ font-size:6.4px; font-weight:700; fill:var(--ink); letter-spacing:.08em; }
+  .chart text.axn{ fill:var(--ink-faint); }
+  .chart text.axm{ font-family:"Caveat",cursive; font-size:9px; fill:var(--clay); }
 
   .hstats{ display:flex; align-items:center; gap:13px; flex-wrap:wrap; }
   .hstats span{ display:flex; align-items:center; gap:4px;
@@ -203,8 +206,32 @@ const DATA = {
   .col{ display:flex; flex-direction:column; gap:5px; min-width:0; }
 
   /* height is set in script, not by flex — see sizePhotos() */
-  .photos{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;
-           align-items:stretch; margin-top:2px; }
+  /* the strip: prints overlapping edge to edge, each tipped slightly */
+  .photostrip{ display:flex; justify-content:center; align-items:stretch; margin-top:2px; }
+  .snap{ flex:1 1 0; min-width:0; background:#FFFDF8; padding:3px 3px 6px;
+         box-shadow:0 1px 2.5px rgba(40,50,59,.28); display:flex; }
+  .snap + .snap{ margin-left:-9px; }
+  .snap img{ width:100%; height:100%; object-fit:cover; display:block; background:#EDE8DC; }
+
+  /* the sticky note, stuck over the corner of the reading section */
+  .read-body{ display:grid; grid-template-columns:1fr 146px; gap:11px; align-items:start; }
+  .read-left{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .sticky{ position:relative; background:#F3E3A2; color:var(--ink); padding:7px 8px 10px;
+           font-family:"Caveat",cursive; font-size:10.4px; line-height:1.24;
+           transform:rotate(1.7deg); box-shadow:1px 1.5px 2.5px rgba(40,50,59,.24); }
+  .sticky::after{ content:""; position:absolute; right:0; bottom:0; width:0; height:0;
+                  border-style:solid; border-width:0 0 10px 10px;
+                  border-color:transparent transparent var(--paper) transparent; }
+
+  /* numbered highlights — a real list, so the numbers carry order, not decoration */
+  .hilites{ display:flex; flex-direction:column; gap:1.5px; }
+  .hilites > .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
+                   text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
+                   margin-bottom:1px; }
+  .hl{ display:flex; gap:5px; align-items:baseline;
+       font-family:"Crimson Pro",Georgia,serif; font-size:9.4px; line-height:1.3; }
+  .hl .hn{ flex:none; font-family:"Courier Prime",monospace; font-size:7px; font-weight:700;
+           color:var(--marigold); width:7px; }
   .polaroid{ position:relative; background:#FFFDF8; padding:3.5px 3.5px 0;
              box-shadow:0 1px 2px rgba(40,50,59,.2);
              display:flex; flex-direction:column; min-height:0; height:100%; }
@@ -380,12 +407,13 @@ const DATA = {
   /* One bar per day of the month. A day with no reading is drawn as a stub on
      the baseline rather than skipped or interpolated — a gap in the export is
      worth seeing. */
-  function stepsChart(series, avg, w, h){
+  function stepsChart(series, avg, w, h, mark){
     const n = series.length, gap = 2;
     const bw = Math.max(2.5, (w - gap * (n - 1)) / n);
     const vals = series.filter(v => v != null);
     if (!vals.length) return "";
     const top = Math.max.apply(null, vals);
+    const lane = mark ? 11 : 0;                  // headroom for the ring's label
     const plot = h - 7;
     let bars = "";
     series.forEach((v, i) => {
@@ -395,58 +423,104 @@ const DATA = {
           height="1.5" fill="var(--ink-faint)" opacity=".4"><title>Day ${i+1}: no reading</title></rect>`;
         return;
       }
-      const bh = Math.max(1.2, v / top * plot);
+      const bh = Math.max(1.2, (v / top) * (plot - lane));
       bars += `<rect x="${x.toFixed(1)}" y="${(plot - bh).toFixed(1)}" width="${bw.toFixed(1)}"
         height="${bh.toFixed(1)}" rx="1.4" fill="var(--teal)"
         ><title>Day ${i+1}: ${num(v)} steps</title></rect>`;
     });
-    const ay = plot - (avg / top) * plot;
+    const ay = plot - (avg / top) * (plot - lane);
+
+    /* a ring drawn round a run of days, the way you would circle them by hand */
+    let ring = "";
+    if (mark){
+      const a = Math.max(1, Number(mark.from)) - 1, b = Math.min(n, Number(mark.to)) - 1;
+      const x0 = a * (bw + gap) - 2.5, x1 = b * (bw + gap) + bw + 2.5;
+      const cx = (x0 + x1) / 2, rx = (x1 - x0) / 2, cy = plot - (plot - lane) / 2 + 1;
+      const ry = (plot - lane) / 2 + 4;
+      ring = `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}"
+          ry="${ry.toFixed(1)}" fill="none" stroke="var(--clay)" stroke-width="1.1"
+          transform="rotate(-4 ${cx.toFixed(1)} ${cy.toFixed(1)})" opacity=".95"/>
+        <text class="axm" x="${(x0 - 4).toFixed(1)}" y="6.5" text-anchor="end">${esc(mark.label || "")}</text>
+        <path d="M${(x0 - 3).toFixed(1)} 8 Q ${(cx - rx * 0.4).toFixed(1)} 9.5 ${(cx - rx * 0.55).toFixed(1)} ${(cy - ry + 1).toFixed(1)}"
+          fill="none" stroke="var(--clay)" stroke-width=".7" opacity=".8"/>`;
+    }
+
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
-       aria-label="Daily steps across the month, averaging ${num(Math.round(avg))}">
+       aria-label="Daily steps across the month, averaging ${num(Math.round(avg))}${
+         mark ? `; days ${mark.from} to ${mark.to} ringed: ${esc(mark.label || "")}` : ""}">
       ${bars}
       <line x1="0" y1="${ay.toFixed(1)}" x2="${w}" y2="${ay.toFixed(1)}"
             stroke="var(--marigold)" stroke-width="1" stroke-dasharray="3 2.5"/>
       <line x1="0" y1="${plot}" x2="${w}" y2="${plot}" stroke="var(--ink)"
             stroke-width=".8" opacity=".55"/>
-      <text x="0" y="${h - 0.5}">1</text>
-      <text x="${w}" y="${h - 0.5}" text-anchor="end">${n}</text>
+      ${ring}
+      <text class="axn" x="0" y="${h - 0.5}">1</text>
+      <text class="axn" x="${w}" y="${h - 0.5}" text-anchor="end">${n}</text>
     </svg>`;
   }
 
   /* Mean sleep for each weekday. One hue throughout — the six-hour rule is the
      reference line, and the numbers live in the note underneath, so nothing is
      encoded by colour alone. */
-  function weekdayChart(days, w, h){
-    const vals = days.map(d => Number(d.sleep) || 0).filter(v => v > 0);
-    if (!vals.length) return "";
-    // A connected dot plot, not bars. The whole point is the gap between the
-    // short night and the long one, and bars from a zero baseline flatten a
-    // 5-to-8 hour spread into a few pixels. A line over an ordinal week may
-    // sit on a non-zero scale; a filled bar may not.
-    const lo = Math.min(4, Math.floor(Math.min.apply(null, vals)));
-    const hi = Math.max(9, Math.ceil(Math.max.apply(null, vals)));
-    const plot = h - 7, pad = 7;
-    const X = i => pad + i * ((w - pad * 2) / (days.length - 1));
-    const Y = v => plot - ((v - lo) / (hi - lo)) * plot;
-    let path = "", dots = "", labs = "";
+  /* Each weekday gets the shape of its usual night — a box over two years of
+     data, where there are ~50 nights to take quartiles from — with this
+     month's four or five nights scattered on top. A box drawn from one month
+     alone would be quartiles of four points, which is mostly noise. */
+  function weekdayChart(days, base, w, h){
+    const every = [];
+    days.forEach(d => (d.values || []).forEach(v => every.push(v)));
+    (base || []).forEach(b => { if (b.box) every.push(b.box.lo, b.box.hi); });
+    if (!every.length) return "";
+    // Scale to the baseline's own reach. One 13-hour night would otherwise
+    // stretch the axis until every other weekday collapsed into a smudge;
+    // anything above the top is pinned there and drawn as a caret instead.
+    const reach = [];
+    (base || []).forEach(b => { if (b.box) reach.push(b.box.lo, b.box.hi); });
+    const lo = Math.floor(Math.min.apply(null, every) * 2) / 2 - 0.3;
+    const hi = Math.ceil(Math.max(reach.length ? Math.max.apply(null, reach) : 10, 9) * 2) / 2 + 0.3;
+    const top = 3, plot = h - 8;                 // 8px lane for the day letters
+    const step = w / days.length;
+    const Y = v => top + (1 - (v - lo) / (hi - lo)) * (plot - top);
+    const BW = Math.min(14, step * 0.52);
+    const JIT = [0, -0.34, 0.34, -0.62, 0.62, -0.17, 0.17];   // stable, not random
+
+    let boxes = "", dots = "", labs = "";
     days.forEach((d, i) => {
-      const v = Number(d.sleep) || 0, x = X(i), y = Y(v);
-      if (v > 0){
-        path += (path ? " L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
-        dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.3" fill="var(--teal)"
-          stroke="var(--paper)" stroke-width="1.1"><title>${esc(d.day)}: ${v.toFixed(2)} h average</title></circle>`;
+      const cx = step * (i + 0.5);
+      const b = (base && base[i] && base[i].box) || null;
+      if (b){
+        boxes += `<line x1="${cx}" y1="${Y(b.hi).toFixed(1)}" x2="${cx}" y2="${Y(b.lo).toFixed(1)}"
+            stroke="var(--ink-faint)" stroke-width=".7" opacity=".75"/>
+          <rect x="${(cx - BW / 2).toFixed(1)}" y="${Y(b.q3).toFixed(1)}" width="${BW.toFixed(1)}"
+            height="${Math.max(1, Y(b.q1) - Y(b.q3)).toFixed(1)}" rx="1.2"
+            fill="var(--ink-faint)" fill-opacity=".2" stroke="var(--ink-faint)" stroke-width=".7"
+            ><title>${esc(d.day)} over 2 years: middle half ${b.q1}–${b.q3} h, median ${b.med} h</title></rect>
+          <line x1="${(cx - BW / 2).toFixed(1)}" y1="${Y(b.med).toFixed(1)}"
+            x2="${(cx + BW / 2).toFixed(1)}" y2="${Y(b.med).toFixed(1)}"
+            stroke="var(--ink-soft)" stroke-width="1.1"/>`;
       }
-      labs += `<text x="${x.toFixed(1)}" y="${h - 0.5}" text-anchor="middle"
+      (d.values || []).forEach((v, k) => {
+        const x = cx + (JIT[k % JIT.length]) * BW;
+        if (v > hi){
+          dots += `<path d="M${(x - 2.4).toFixed(1)} ${(Y(hi) + 1.4).toFixed(1)}
+            L${x.toFixed(1)} ${(Y(hi) - 2).toFixed(1)} L${(x + 2.4).toFixed(1)} ${(Y(hi) + 1.4).toFixed(1)}Z"
+            fill="var(--teal)" stroke="var(--paper)" stroke-width=".7"
+            ><title>${esc(d.day)} this month: ${v} h — above the top of the scale</title></path>`;
+        } else {
+          dots += `<circle cx="${x.toFixed(1)}" cy="${Y(v).toFixed(1)}" r="1.85" fill="var(--teal)"
+            stroke="var(--paper)" stroke-width=".8"><title>${esc(d.day)} this month: ${v} h</title></circle>`;
+        }
+      });
+      labs += `<text class="axd" x="${cx.toFixed(1)}" y="${h - 0.5}" text-anchor="middle"
         >${esc(String(d.day).charAt(0))}</text>`;
     });
     const six = Y(6);
     return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"
-       aria-label="Average hours slept for each day of the week, from ${lo} to ${hi} hours">
-      <line x1="0" y1="${six.toFixed(1)}" x2="${w}" y2="${six.toFixed(1)}"
+       aria-label="Hours slept by weekday: each night this month as a dot, over a box of the usual range across two years">
+      <line x1="0" y1="${six.toFixed(1)}" x2="${w - 13}" y2="${six.toFixed(1)}"
             stroke="var(--marigold)" stroke-width="1" stroke-dasharray="3 2.5"/>
-      <path d="${path}" fill="none" stroke="var(--teal)" stroke-width="1.3"
-            stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>
-      ${dots}${labs}
+      <text class="axn" x="${w}" y="${(six + 2).toFixed(1)}" text-anchor="end">6h</text>
+      ${boxes}${dots}${labs}
     </svg>`;
   }
 
@@ -526,6 +600,23 @@ const DATA = {
     : String(w.carryover || "").split(/\r?\n+/);
   const carriedClean = carried.map(c => String(c).trim()).filter(Boolean);
 
+  /* Photos are a strip now rather than two captioned frames: overlapping,
+     each tipped a little, the way a handful of prints falls on a page. */
+  const shotList = (Array.isArray(f.photos) ? f.photos
+    /* months built before the strip kept two named photos */
+    : [f.lilahPhoto, f.activityPhoto]).filter(x => x && x.src);
+  const TILT = [-2.4, 1.8, -1.2, 2.6, -1.9, 1.1];
+  const shots = shotList.length
+    ? shotList.map((ph, i) => `<figure class="snap" style="transform:rotate(${TILT[i % TILT.length]}deg);z-index:${i + 1}">
+        <img src="${esc(ph.src)}" alt="${esc(ph.alt || "A photo from this month")}">
+      </figure>`).join("")
+    : `<div class="noshot" role="img" aria-label="no photos"><svg viewBox="0 0 24 24" width="19"
+         height="19" fill="none" stroke="var(--ink-faint)" stroke-width="1.3" stroke-linecap="round"
+         stroke-linejoin="round"><path d="M3 8.5h3.4L8 6.3h8l1.6 2.2H21v10H3z"/><circle cx="12" cy="13.2" r="3.1"/></svg></div>`;
+
+  const highlights = (Array.isArray(f.highlights) ? f.highlights
+    : String(f.highlights || "").split(/\r?\n+/)).map(t => String(t).trim()).filter(Boolean);
+
   const head = (icon, name) =>
     `<div class="sec-head">${icon}<span class="name">${name}</span><span class="rule"></span></div>`;
 
@@ -549,14 +640,19 @@ const DATA = {
         <span class="score"><span class="who">Mine</span>${stars(avgMine,"var(--marigold)")}<span class="val" style="color:var(--marigold)">${avgMine.toFixed(2)}</span></span>
         <span class="score"><span class="who">Goodreads</span>${stars(avgGR,"var(--ink-soft)")}<span class="val" style="color:var(--ink-soft)">${avgGR.toFixed(2)}</span></span>
       </div>
-      <div class="picks">
-        <div class="pick"><span class="mk" style="color:var(--clay)">&#9829;</span>
-          <span><b>${esc((r.favorite||{}).title)}</b>${(r.favorite||{}).note ? ` &mdash; <i>${esc(r.favorite.note)}</i>` : ""}</span></div>
-        <div class="pick"><span class="mk" style="color:var(--ink-faint)">&times;</span>
-          <span><b>${esc((r.leastFavorite||{}).title)}</b>${(r.leastFavorite||{}).note ? ` &mdash; <i>${esc(r.leastFavorite.note)}</i>` : ""}</span></div>
+      <div class="read-body">
+        <div class="read-left">
+          <div class="picks">
+            <div class="pick"><span class="mk" style="color:var(--clay)">&#9829;</span>
+              <span><b>${esc((r.favorite||{}).title)}</b>${(r.favorite||{}).note ? ` &mdash; <i>${esc(r.favorite.note)}</i>` : ""}</span></div>
+            <div class="pick"><span class="mk" style="color:var(--ink-faint)">&times;</span>
+              <span><b>${esc((r.leastFavorite||{}).title)}</b>${(r.leastFavorite||{}).note ? ` &mdash; <i>${esc(r.leastFavorite.note)}</i>` : ""}</span></div>
+          </div>
+          ${(r.quote && r.quote.text) ? `<blockquote class="quote">&ldquo;${esc(r.quote.text)}&rdquo;
+            <cite>${esc(r.quote.book)}</cite></blockquote>` : ""}
+        </div>
+        ${r.sticky ? `<div class="sticky">${esc(r.sticky)}</div>` : ""}
       </div>
-      ${(r.quote && r.quote.text) ? `<blockquote class="quote">&ldquo;${esc(r.quote.text)}&rdquo;
-        <cite>${esc(r.quote.book)}</cite></blockquote>` : ""}
     </section>
 
     <section class="sec">
@@ -569,11 +665,11 @@ const DATA = {
       <div class="charts">
         <figure class="ch">
           <figcaption>Steps by day<em>avg ${num(Math.round(h.stepMean || 0))}</em></figcaption>
-          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 243, 30)}
+          ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 222, 46, h.mark)}
         </figure>
         <figure class="ch">
-          <figcaption>Sleep by weekday<em>6h</em></figcaption>
-          ${weekdayChart(h.weekday || [], 172, 30)}
+          <figcaption>Sleep by weekday<em>dots = Sept &middot; box = usual</em></figcaption>
+          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 193, 46)}
         </figure>
       </div>` : ""}
 
@@ -587,15 +683,17 @@ const DATA = {
 
     ${weatherBand}
 
+    <section class="sec">
+      ${head(ICON.house, "Family")}
+      <div class="photostrip">${shots}</div>
+    </section>
+
     <div class="bottom">
       <section class="sec col">
-        ${head(ICON.house, "Family")}
-        <div class="photos">
-          ${photo((f.lilahPhoto||{}).src, (f.lilahPhoto||{}).caption, "Favourite photo of Lilah this month")}
-          ${photo((f.activityPhoto||{}).src, (f.activity||{}).caption, "Favourite family activity this month")}
-        </div>
         <div class="fline"><span class="lab">New this month</span>${esc(f.lilahSkill)}</div>
-        <div class="fline"><span class="lab">Best day out</span>${esc((f.activity||{}).title)}</div>
+        ${highlights.length ? `<div class="hilites"><span class="lab">Highlights</span>
+          ${highlights.map((t, i) => `<div class="hl"><span class="hn">${i + 1}</span>
+            <span>${esc(t)}</span></div>`).join("")}</div>` : ""}
         ${f.celebration ? `<div class="celebrate">${ICON.star}<span class="txt">${esc(f.celebration)}</span></div>` : ""}
       </section>
 
@@ -608,7 +706,7 @@ const DATA = {
           ${carriedClean.map(c => `<div class="wentry"><span class="bullet"
             style="color:var(--clay)">&gt;</span><span class="body">${esc(c)}</span></div>`).join("")}
         </div>` : ""}
-        ${shelfRows ? `<div class="shelf"><div class="shelf-head">The shelf</div>${shelfRows}</div>` : ""}
+        ${(shelfRows && books.length >= 3) ? `<div class="shelf"><div class="shelf-head">The shelf</div>${shelfRows}</div>` : ""}
       </section>
     </div>
 
@@ -623,44 +721,36 @@ const DATA = {
      layout resolves flex differently from its screen layout, so a page that
      measured clean in the browser could still clip when printed. Measuring
      once here and pinning the result makes both paths agree. */
-  (function sizePhotos(){
+  function sizePhotos(){
     const pageEl = document.getElementById("page");
-    const photos = pageEl.querySelector(".photos");
-    if (!photos) return;
+    const strip = pageEl.querySelector(".photostrip");
+    if (!strip) return;
     const foot = pageEl.querySelector(".foot");
-    const own = photos.closest(".col");
-    const cols = Array.prototype.slice.call(pageEl.querySelectorAll(".bottom .col"));
 
-    // Two things hide the free space during measurement. The footer's
-    // margin-top:auto swallows it, and the page's height is fixed, so
-    // scrollHeight never drops below clientHeight — the slack has to be read
-    // off the footer's own position instead. The columns also stretch to each
-    // other, so pin them to their natural heights while measuring.
+    // The page has a fixed height, so scrollHeight never drops below
+    // clientHeight and cannot reveal the slack; and the footer's
+    // margin-top:auto swallows it. Stand the margin down and read the free
+    // space off the footer's own position instead.
     if (foot) foot.style.marginTop = "0px";
-    cols.forEach(c => { c.style.alignSelf = "start"; });
-    photos.style.overflow = "hidden";     // so the collapsed children measure as 0
-    photos.style.height = "0px";
+    strip.style.overflow = "hidden";
+    strip.style.height = "0px";
 
     const padBottom = parseFloat(getComputedStyle(pageEl).paddingBottom) || 0;
     const usable = pageEl.clientHeight - padBottom;
     const bottomOf = () => foot ? foot.offsetTop + foot.offsetHeight : usable;
 
-    // slack at the foot, plus the headroom this column has before it overtakes
-    // its neighbour — growing into that costs nothing. offsetHeight, not
-    // getBoundingClientRect: the stage is transform-scaled.
-    let sibling = 0;
-    cols.forEach(c => { if (c !== own) sibling = Math.max(sibling, c.offsetHeight); });
-    const free = (usable - bottomOf()) + Math.max(0, sibling - own.offsetHeight);
-    photos.style.height = Math.max(88, Math.min(215, free - 2)) + "px";
-
-    // and if that overshot, hand back exactly what spilled
+    strip.style.height = Math.max(70, Math.min(150, (usable - bottomOf()) - 2)) + "px";
     const over = bottomOf() - usable;
-    if (over > 0) photos.style.height = Math.max(60, photos.offsetHeight - over) + "px";
+    if (over > 0) strip.style.height = Math.max(54, strip.offsetHeight - over) + "px";
 
-    photos.style.overflow = "";           // the washi tape overhangs the frame
-    cols.forEach(c => { c.style.alignSelf = ""; });
+    strip.style.overflow = "";
     if (foot) foot.style.marginTop = "";
-  })();
+  }
+  /* Once now so the first paint is sane, and again when the webfonts land:
+     measuring against fallback metrics pins the wrong height, and the text
+     reflows under it. */
+  sizePhotos();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizePhotos);
 
   const title = `${DATA.month} ${DATA.year} Roundup`;
   document.title = title;

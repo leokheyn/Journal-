@@ -75,14 +75,17 @@ def main():
     worst_i = sleep.index(min(got_sleep)) if got_sleep else None
     long_i = sleep.index(max(got_sleep)) if got_sleep else None
 
-    # weekday shape, this month
+    # weekday shape, this month: the mean, plus every individual night, so the
+    # page can scatter the actual nights instead of only their average
     wd = []
     for i, name in enumerate(WEEKDAYS):
         idx = [j for j, d in enumerate(month_days) if d.weekday() == i]
+        nights = sorted(sleep[j] for j in idx if sleep[j] is not None)
         wd.append({
             "day": name,
-            "n": sum(1 for j in idx if sleep[j] is not None),
-            "sleep": mean([sleep[j] for j in idx]),
+            "n": len(nights),
+            "sleep": mean(nights),
+            "values": [round(v, 2) for v in nights],
             "steps": mean([steps[j] for j in idx]),
         })
 
@@ -95,9 +98,18 @@ def main():
     base = [r for r in rows if back <= r["_d"] < start]
     base_wd = []
     for i, name in enumerate(WEEKDAYS):
-        vals = [num(r["sleep_h"]) for r in base if r["_d"].weekday() == i]
-        base_wd.append({"day": name, "n": len([v for v in vals if v is not None]),
-                        "sleep": mean(vals)})
+        vals = sorted(v for v in (num(r["sleep_h"]) for r in base
+                                  if r["_d"].weekday() == i) if v is not None)
+        box = None
+        if len(vals) >= 5:
+            # quartiles over the whole baseline, which is what makes a box
+            # worth drawing at all — a single month gives 4 nights a weekday
+            q1, med, q3 = (round(q, 2) for q in st.quantiles(vals, n=4))
+            iqr = q3 - q1
+            inside = [v for v in vals if q1 - 1.5 * iqr <= v <= q3 + 1.5 * iqr]
+            box = {"q1": q1, "med": med, "q3": q3,
+                   "lo": round(min(inside), 2), "hi": round(max(inside), 2)}
+        base_wd.append({"day": name, "n": len(vals), "sleep": mean(vals), "box": box})
     base_steps = mean([num(r["steps"]) for r in base])
     base_sleep = mean([num(r["sleep_h"]) for r in base])
 
