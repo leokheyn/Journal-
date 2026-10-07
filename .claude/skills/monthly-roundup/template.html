@@ -234,6 +234,10 @@ const DATA = {
   .wentry .bullet{ flex:none; font-family:"Courier Prime",monospace; font-size:11px;
                    font-weight:700; line-height:1.22; width:10px; text-align:center; }
   .wentry .body{ font-family:"Crimson Pro",Georgia,serif; font-size:9.5px; line-height:1.34; }
+  .carries{ display:flex; flex-direction:column; gap:2px; }
+  .carries > .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
+                   text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
+                   margin-bottom:1px; }
   .wentry .body .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
                       text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
                       display:block; margin-bottom:1px; }
@@ -516,6 +520,12 @@ const DATA = {
       ${wx.note ? `<div class="wnote">${BOLT}<span>${esc(wx.note)}</span></div>` : ""}
     </div>`;
 
+  /* Carryover may be one task or several, typed on separate lines. Each
+     migrating task gets its own ">" — that is what the mark means. */
+  const carried = Array.isArray(w.carryover) ? w.carryover.slice()
+    : String(w.carryover || "").split(/\r?\n+/);
+  const carriedClean = carried.map(c => String(c).trim()).filter(Boolean);
+
   const head = (icon, name) =>
     `<div class="sec-head">${icon}<span class="name">${name}</span><span class="rule"></span></div>`;
 
@@ -593,8 +603,11 @@ const DATA = {
         ${head(ICON.case, "Work")}
         <div class="wentry"><span class="bullet" style="color:var(--teal)">&times;</span>
           <span class="body"><span class="lab">Landed it</span>${esc(w.accomplishment)}</span></div>
-        <div class="wentry"><span class="bullet" style="color:var(--clay)">&gt;</span>
-          <span class="body"><span class="lab">Migrates forward</span>${esc(w.carryover)}</span></div>
+        ${carriedClean.length ? `<div class="carries">
+          <span class="lab">Migrates forward</span>
+          ${carriedClean.map(c => `<div class="wentry"><span class="bullet"
+            style="color:var(--clay)">&gt;</span><span class="body">${esc(c)}</span></div>`).join("")}
+        </div>` : ""}
         ${shelfRows ? `<div class="shelf"><div class="shelf-head">The shelf</div>${shelfRows}</div>` : ""}
       </section>
     </div>
