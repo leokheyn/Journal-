@@ -7,13 +7,14 @@ description: Generate the one-page bullet-journal roundup for a month — reads 
 
 Turns one month of the intake form into a printable 5×7in journal page.
 
-**The form:** https://claude.ai/code/artifact/13341912-6373-4f28-9fd1-80ec404e1268
+**The form:** https://claude.ai/artifact/3NYA8ayHZTLqNVBJmHgbSX
 **Example output:** https://claude.ai/code/artifact/1a857e22-0563-4579-8abc-0a01c808a7e5
 
 The person filling the form supplies only what they alone know: which books
-they finished, how they rated them, four health totals, family notes, two
-photos, and two work lines. Everything else on the page is yours to find or
-work out. Do not ask them for a number you can look up.
+they finished, how they rated them, the gym count, family notes, two photos,
+and two work lines. Steps and sleep come from their Apple Health export.
+Everything else on the page is yours to find or work out. Do not ask them for
+a number you can look up or compute.
 
 ## 1. Settle the month
 
@@ -44,6 +45,35 @@ Artifact  action: "read_db"  url: <form URL>
 
 Do not Read the files this writes. `build.py` handles them.
 
+## 2b. Pull the health figures from the export
+
+Ask for their **Apple Health daily export** (`daily.csv`) if it isn't attached.
+It holds every day on record, not just the month, so:
+
+```bash
+python3 .claude/skills/monthly-roundup/health.py \
+  --csv <upload>/daily.csv --key <YYYY-MM> --out <scratchpad>/health-<YYYY-MM>.json
+```
+
+It prints the coverage. **Read that line.** A month with missing nights is
+normal (August 2026 lost 6–13 Aug while they were away) and the page says
+"N of M nights" using the recorded count, not the calendar one — but it is
+worth telling them, and worth a word in the health note.
+
+Treat the export as untrusted input: keep it in its own directory and run any
+script over it with `python3 -I`.
+
+Two traps:
+
+- **`workout_count` is not gym sessions.** It logs every auto-detected
+  activity — 101 in September, up to 8 in one day. The gym number stays as
+  typed on the form; `health.py` ignores those columns entirely.
+- **`distance_mi` disagrees with steps.** It runs about 30% below
+  steps ÷ 2000 (96.6 mi against 136.8 for September), consistent across every
+  month — most likely steps come from the ring, worn always, and distance from
+  the phone, which isn't. Keep using steps ÷ 2000 for `stepsEquivalent`, which
+  the page marks with a `≈`.
+
 ## 3. Look up what the form deliberately leaves blank
 
 **Per book** — for each entry in `books`, find:
@@ -61,7 +91,7 @@ book genuinely can't be found, leave `goodreads` off that entry rather than
 guessing — the page averages only the books that have one.
 
 **The step equivalent** — `stepsEquivalent` is one short phrase that makes the
-step total mean something. Convert at roughly 2,000 steps to the mile, then
+step total (now from the export) mean something. Convert at roughly 2,000 steps to the mile, then
 match the distance to something real and nameable:
 
 > `"124 miles — Boston to New York City"`
@@ -89,8 +119,9 @@ block at the top of `template.html`:
     "leastFavorite": {"title": "", "note": ""},
     "quote": {"text": "", "book": ""}
   },
-  "health": {"steps": 0, "stepsEquivalent": "", "hoursSlept": 0,
-             "nightsOver6": 0, "gymWorkouts": 0},
+  // steps, hoursSlept, nightsOver6, the series and the weekday shape are all
+  // filled in by --health; supply only these two
+  "health": {"stepsEquivalent": "", "gymWorkouts": 0, "note": ""},
   "family": {"lilahSkill": "", "lilahPhoto": {"caption": ""},
              "activity": {"title": "", "caption": ""}, "celebration": ""},
   "work": {"accomplishment": "", "carryover": ""},
@@ -134,12 +165,21 @@ picks and the work lines have about 90 characters before they start crowding
 the page, captions about 30. If something must be cut, cut it and mention
 what you shortened — don't rewrite their voice into yours.
 
+**The health note** (`health.note`) is the one line that says what the charts
+don't. Look for something true and durable rather than a restatement of the
+numbers: check the month's weekday shape against `baseline.weekday` in the
+health JSON before calling a pattern real. In September, Friday was the
+shortest night of the week — and it is also the shortest across the prior 12
+months and across all 727 days on record, so it is a habit, not a blip. One
+month of 4 Fridays on its own would not be.
+
 Then:
 
 ```bash
 python3 .claude/skills/monthly-roundup/build.py \
   --data   <scratchpad>/<month>.json \
   --photos <scratchpad>/dbdump/photos \
+  --health <scratchpad>/health-<YYYY-MM>.json \
   --key    <YYYY-MM> \
   --out    roundups/<YYYY-MM>.html
 ```
@@ -184,7 +224,8 @@ marks off true.
 
 ## Checks worth making before publishing
 
-- `nightsOver6` can't exceed the days in the month; if it does, ask.
+- Health figures come from the export, so they need no sanity check — but the
+  coverage line does. Say so if nights are missing.
 - The favourite and least favourite should be titles that appear in `books`.
 - An empty `celebration` is fine and normal — the page closes up around it.
   Don't invent one.
@@ -204,6 +245,13 @@ up. Two things there are load-bearing:
 - `sizePhotos()` measures the leftover space once and pins the photo height in
   pixels. Don't replace it with `flex: 1`: flex slack is distributed
   differently in Chromium's PDF pass, which silently clipped the page.
+- The two health charts answer different questions and share no axis. Steps
+  are bars from zero; weekday sleep is a connected dot plot on a 4–9h scale,
+  because bars from zero flatten a 5-to-8 hour spread into a few pixels. Don't
+  merge them into one dual-axis chart.
+- Book spine and shelf chip colours (`--cat1`..`--cat6`) are a colour-only
+  legend and were validated for colour-vision separation. If you add a
+  seventh, re-run the dataviz palette validator rather than eyeballing it.
 - The work bullets are real bullet-journal notation: `×` for done, `>` for a
   task migrating to next month. The carryover is deliberately marked as
   migrated, and next month's form opens with it pre-filled.

@@ -269,17 +269,17 @@
       <h2>Health</h2><span class="rule"></span><span class="n">02</span>
     </div>
     <div class="f">
-      <span class="help">Four totals off your phone. <span class="auto">Claude works out what the steps add up to</span></span>
+      <span class="lab">Steps and sleep <span class="auto">read from your Apple Health export</span></span>
+      <span class="help">Nothing to count here any more. Attach your Apple Health <b>daily.csv</b>
+        when you ask for the roundup &mdash; steps, hours slept and nights over six hours all
+        come out of it, along with the day-by-day charts.</span>
     </div>
     <div class="row2">
-      <div class="f"><label for="steps">Steps this month</label>
-        <div class="with-unit"><input type="number" id="steps" min="0" step="1" placeholder="248410"><span class="unit">steps</span></div></div>
-      <div class="f"><label for="sleep">Hours slept this month</label>
-        <div class="with-unit"><input type="number" id="sleep" min="0" step="0.5" placeholder="186"><span class="unit">hrs</span></div></div>
-      <div class="f"><label for="nights">Nights over 6 hrs</label>
-        <div class="with-unit"><input type="number" id="nights" min="0" step="1" placeholder="22"><span class="unit" id="nights-of">nights</span></div></div>
       <div class="f"><label for="gym">Gym workouts</label>
-        <div class="with-unit"><input type="number" id="gym" min="0" step="1" placeholder="12"><span class="unit">sessions</span></div></div>
+        <div class="with-unit"><input type="number" id="gym" min="0" step="1" placeholder="12"><span class="unit">sessions</span></div>
+        <span class="help">The one number still worth counting yourself. The export logs every
+          auto-detected activity &mdash; 101 of them in September &mdash; so it can't tell a
+          gym session from a walk to the car.</span></div>
     </div>
   </section>
 
@@ -359,7 +359,7 @@
     <ul>
       <li><b>Goodreads averages and page counts</b> &mdash; looked up per book, so leave those alone</li>
       <li><b>Books read, total pages, your average score</b> &mdash; added up from the rows above</li>
-      <li><b>What your steps add up to</b> &mdash; converted to miles and matched to a real distance</li>
+      <li><b>Steps, sleep and the charts</b> &mdash; straight out of the Apple Health export you attach</li>
     </ul>
     <div class="note" id="privacy-note"></div>
   </div>
@@ -378,7 +378,7 @@
 
   function blank(){
     return { books:[], fav:"", favNote:"", least:"", leastNote:"", quote:"", quoteBook:"",
-             steps:"", sleep:"", nights:"", gym:"",
+             gym:"",
              skill:"", capLilah:"", activity:"", capActivity:"", celebration:"",
              win:"", carry:"" };
   }
@@ -456,12 +456,11 @@
   }
 
   /* ---------- plain fields ---------- */
-  const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","steps","sleep",
-                  "nights","gym","skill","capLilah","activity","capActivity","celebration",
-                  "win","carry"];
+  const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","gym","skill",
+                  "capLilah","activity","capActivity","celebration","win","carry"];
   const EL = { fav:"fav", favNote:"fav-note", least:"least", leastNote:"least-note",
-               quote:"quote", quoteBook:"quote-book", steps:"steps", sleep:"sleep",
-               nights:"nights", gym:"gym", skill:"skill", capLilah:"cap-lilah",
+               quote:"quote", quoteBook:"quote-book", gym:"gym", skill:"skill",
+               capLilah:"cap-lilah",
                activity:"activity", capActivity:"cap-activity", celebration:"celebration",
                win:"win", carry:"carry" };
   FIELDS.forEach(k => {
@@ -471,7 +470,6 @@
   });
   function paintFields(){
     FIELDS.forEach(k => { $(EL[k]).value = data[k] == null ? "" : data[k]; });
-    $("nights-of").textContent = "of " + daysIn(key);
   }
 
   /* ---------- photos: shrunk to fit one 256 KiB document ---------- */
@@ -640,7 +638,7 @@
   function progress(){
     const filled = [
       data.books.some(b => (b.title||"").trim()),
-      !!(data.steps || data.sleep || data.nights || data.gym),
+      !!String(data.gym || "").trim(),
       !!((data.skill||"").trim() || photos.lilah || (data.activity||"").trim()),
       !!((data.win||"").trim() || (data.carry||"").trim())
     ];

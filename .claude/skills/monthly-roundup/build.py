@@ -68,11 +68,29 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="JSON file holding the DATA object")
     ap.add_argument("--photos", default="", help="directory of photo docs from read_db out_dir")
+    ap.add_argument("--health", default="", help="JSON from health.py, if the month has an export")
     ap.add_argument("--key", required=True, help="month key, e.g. 2026-09")
     ap.add_argument("--out", required=True, help="path to write the finished page to")
     args = ap.parse_args()
 
     data = json.loads(pathlib.Path(args.data).read_text())
+
+    # Health figures come from the export when there is one. Only the numbers
+    # the export actually measures are overwritten: the gym count stays as
+    # entered, because the export's workout rows log every auto-detected
+    # activity and cannot be filtered down to gym sessions.
+    if args.health:
+        hx = json.loads(pathlib.Path(args.health).read_text())
+        health = data.setdefault("health", {})
+        health["steps"] = hx["steps"]["total"]
+        health["stepSeries"] = hx["steps"]["series"]
+        health["stepMean"] = hx["steps"]["mean"]
+        health["hoursSlept"] = hx["sleep"]["totalH"]
+        health["nightsOver6"] = hx["sleep"]["nightsOver6"]
+        health["nightsRecorded"] = hx["sleep"]["recorded"]
+        health["weekday"] = [{"day": w["day"], "sleep": w["sleep"]} for w in hx["weekday"]]
+        print(f"  health: {hx['steps']['total']:,} steps, {hx['sleep']['totalH']}h sleep "
+              f"over {hx['sleep']['recorded']}/{hx['daysInMonth']} nights")
 
     # month/year/daysInMonth are derived from the key so they can't drift
     year, month_num = (int(part) for part in args.key.split("-"))
