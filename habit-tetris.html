@@ -1,0 +1,551 @@
+<title>Habit Tetris</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bungee&family=Patrick+Hand+SC&display=swap">
+<style>
+/* Layout: controls on the left, the board on a sheet of dot-grid paper on the right; stacks on phones. */
+:root {
+  --bg: #eceef3;
+  --panel: #ffffff;
+  --fg: #1b1e2b;
+  --muted: #5b6172;
+  --line: #d4d8e1;
+  --accent: #3a3fd8;
+  --accent-fg: #ffffff;
+  --warn: #b4560a;
+  --paper: #fdfdfb;
+  --dot: #c3c7cf;
+  --font-display: "Bungee", "Arial Black", Impact, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand SC", "Comic Sans MS", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141c; --panel: #1b1e29; --fg: #e8eaf2; --muted: #9aa0b2; --line: #2e3242;
+    --accent: #8d92ff; --accent-fg: #12141c; --warn: #f0a35e; --paper: #f4f4f1; --dot: #b9bdc6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141c; --panel: #1b1e29; --fg: #e8eaf2; --muted: #9aa0b2; --line: #2e3242;
+  --accent: #8d92ff; --accent-fg: #12141c; --warn: #f0a35e; --paper: #f4f4f1; --dot: #b9bdc6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.45 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.top h1 { font: 400 28px/1 var(--font-display); margin: 0; letter-spacing: 0.02em; }
+.top p { margin: 0; color: var(--muted); flex: 1 1 260px; min-width: 0; }
+.logo { display: block; flex: none; }
+.layout { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.controls { display: grid; gap: 14px; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.group h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 120px; min-width: 0; }
+input[type="text"], input[type="number"], select {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0;
+}
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.habit { display: grid; grid-template-columns: 30px minmax(0, 1fr) 34px auto; gap: 8px; align-items: center; }
+.habit svg { display: block; }
+.habit input[type="color"] { width: 34px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stepper button { border: 0; background: var(--bg); color: var(--fg); width: 30px; height: 32px; font: 700 16px/1 var(--font-body); cursor: pointer; }
+.stepper button:hover { background: var(--line); }
+.stepper input { border: 0; border-radius: 0; width: 42px; text-align: center; padding: 6px 2px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; background: var(--panel); }
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.total { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 12px; }
+.checks label { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+.checks input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { font: 700 14px/1 var(--font-body); padding: 11px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+.preview { display: grid; gap: 12px; min-width: 0; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.chip.warn { color: var(--warn); border-color: var(--warn); }
+.paper {
+  background-color: var(--paper);
+  background-image: radial-gradient(circle, var(--dot) 0.9px, transparent 1.2px);
+  background-size: 18px 18px;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 8px 24px rgba(20,24,40,.12);
+  padding: 24px;
+  display: flex; justify-content: center;
+}
+#board-svg { display: block; width: 100%; max-width: 560px; height: auto; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+
+@media print {
+  @page { margin: 10mm; }
+  body { background: #fff; padding: 0; }
+  .top, .controls, .stats, .hint { display: none !important; }
+  .wrap, .layout { display: block; max-width: none; }
+  .paper { background: none; box-shadow: none; padding: 0; display: block; }
+  #board-svg { width: auto !important; height: auto !important; max-width: none; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <svg class="logo" width="44" height="44" viewBox="0 0 4 4" aria-hidden="true">
+      <rect x="0" y="2" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="1" y="2" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="2" y="2" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="1" y="1" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="3" y="0" width="1" height="1" fill="#f5b414" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="3" y="1" width="1" height="1" fill="#f5b414" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="3" y="2" width="1" height="1" fill="#f5b414" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="3" y="3" width="1" height="1" fill="#f5b414" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="0" y="3" width="1" height="1" fill="#1ba1d9" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="1" y="3" width="1" height="1" fill="#1ba1d9" stroke="#1b1e2b" stroke-width=".08"/>
+      <rect x="2" y="3" width="1" height="1" fill="#1ba1d9" stroke="#1b1e2b" stroke-width=".08"/>
+    </svg>
+    <h1>Habit Tetris</h1>
+    <p>Enter how many times you hit each habit this month. Every habit is a piece, and the pieces stack into a board you can print and glue into your journal.</p>
+  </header>
+
+  <main class="layout">
+    <section class="controls" aria-label="Board settings">
+      <div class="group">
+        <h2>Month</h2>
+        <div class="row">
+          <label>Month <select id="month"></select></label>
+          <label>Title <input id="title" type="text" placeholder="Month name"></label>
+        </div>
+        <p class="note">Picking a month loads its color palette. You can change any color below.</p>
+      </div>
+
+      <div class="group">
+        <h2>Habits this month</h2>
+        <div id="habits" style="display:grid;gap:8px"></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="total" id="total"></span>
+          <button class="btn" id="clear" type="button">Set all to 0</button>
+        </div>
+        <p class="note" id="example-note">The counts shown are an example. Replace them with the tallies from your notes.</p>
+      </div>
+
+      <div class="group">
+        <h2>Board</h2>
+        <div class="row">
+          <label>Columns <input id="cols" type="number" min="6" max="16" step="1"></label>
+          <label>Square size (mm) <input id="cell" type="number" min="3" max="8" step="0.5"></label>
+          <label>Empty rows on top <input id="extra" type="number" min="0" max="12" step="1"></label>
+        </div>
+        <div class="checks">
+          <label><input id="blank" type="checkbox"> Draw blank pieces on top</label>
+          <label><input id="outline" type="checkbox"> Outlines only (color it in yourself)</label>
+          <label><input id="showTitle" type="checkbox"> Month title</label>
+          <label><input id="showLegend" type="checkbox"> Habit legend</label>
+          <label><input id="cut" type="checkbox"> Dashed cut line</label>
+        </div>
+        <p class="note">Your journal's dot grid is most likely 5&nbsp;mm. Print at 100% scale (not "fit to page") so the squares line up with the dots.</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="print" type="button">Print board</button>
+        <button class="btn" id="shuffle" type="button">Shuffle layout</button>
+        <button class="btn" id="resetColors" type="button">Reset colors</button>
+      </div>
+      <p class="hint" id="frame-hint" hidden>Printing is turned off in this preview. To print, download <code>habit-tetris.html</code> from your Journal- repo and open it in Chrome, Safari or Edge.</p>
+    </section>
+
+    <section class="preview" aria-label="Board preview">
+      <div class="stats" id="stats"></div>
+      <div class="paper" id="print-area"></div>
+      <p class="hint">Pieces stack from the bottom, the same way you draw them by hand. Gaps are squares the packer couldn't fill; press Shuffle layout to try another arrangement.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  // Legend shapes as drawn in the journal (x right, y down). Order = habit order.
+  const PIECES = [
+    { key: "I", cells: [[0,0],[0,1],[0,2],[0,3]] },
+    { key: "S", cells: [[0,0],[0,1],[1,1],[1,2]] },
+    { key: "Z", cells: [[1,0],[1,1],[0,1],[0,2]] },
+    { key: "T", cells: [[0,0],[0,1],[0,2],[1,1]] },
+    { key: "J", cells: [[1,0],[1,1],[1,2],[0,2]] },
+    { key: "L", cells: [[0,0],[0,1],[0,2],[1,2]] },
+    { key: "O", cells: [[0,0],[1,0],[0,1],[1,1]] },
+  ];
+  const DEFAULT_NAMES = ["Finish a book", "Sleep 6+ hrs", "Walk 8k+ steps", "Read that day", "Gym workout", "Family outing", "Watch movie"];
+  const EXAMPLE_COUNTS = [2, 17, 12, 19, 9, 4, 6];
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  // Colors in habit order: I, S, Z, T, J, L, O.
+  const PALETTES = [
+    ["#2e4a8b","#7fb7e6","#3fa7a7","#8f9cc0","#6c5ca8","#2a8fc9","#c4d4ea"], // Jan: frost
+    ["#c8102e","#f48fb1","#e0457b","#8e1b3a","#b05bb8","#ff7f7f","#f3bcd3"], // Feb: valentines
+    ["#f2c12e","#2e8b57","#8bc34a","#1e6e5a","#5daa68","#a8d8b9","#d9e36a"], // Mar: shamrock
+    ["#f7dc7a","#9ed9b8","#8ec5e8","#b7a6e0","#7da9d9","#c9a0dc","#f6a8c0"], // Apr: showers
+    ["#ffd24c","#7cc576","#ff8a65","#f28db2","#b39ddb","#4fc3f7","#e57399"], // May: blooms
+    ["#ffc93c","#8ac926","#ff9f1c","#ff6b6b","#3a86ff","#2ec4b6","#f15bb5"], // Jun: beach
+    ["#fcbf49","#bfc0c0","#f77f00","#d62828","#6a4c93","#4ea8de","#003f88"], // Jul: fireworks
+    ["#f5b414","#5e7f2a","#f47a20","#e8352b","#6a2c91","#1ba1d9","#e0207a"], // Aug: summer brights
+    ["#d4a017","#6b8e23","#e67e22","#c0392b","#8b5a2b","#2c6e8f","#a0522d"], // Sep: harvest
+    ["#f2c12e","#7cb342","#ff7518","#a4161a","#6a1b9a","#4a4e5a","#b5179e"], // Oct: halloween
+    ["#e0a526","#8a9a5b","#d2691e","#c1440e","#7b2d26","#4a6741","#6f4e37"], // Nov: falling leaves
+    ["#d4af37","#1b7f3b","#a8dadc","#c1121f","#1d3557","#e5989b","#b8bcc6"], // Dec: holiday
+  ];
+
+  // ---------- geometry ----------
+  const norm = cells => {
+    const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1]));
+    return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  };
+  const prep = cells => {
+    const w = Math.max(...cells.map(c => c[0])) + 1;
+    const bot = Array(w).fill(99), top = Array(w).fill(-1);
+    for (const [x, y] of cells) { bot[x] = Math.min(bot[x], y); top[x] = Math.max(top[x], y); }
+    return { cells, w, bot, top, h: Math.max(...cells.map(c => c[1])) + 1 };
+  };
+  // Packing works with y pointing up; flipping the legend's y keeps each piece's handedness when drawn back.
+  const ROTS = PIECES.map(p => {
+    let cur = norm(p.cells.map(([x, y]) => [x, -y]));
+    const out = [], seen = new Set();
+    for (let r = 0; r < 4; r++) {
+      const k = JSON.stringify(cur);
+      if (!seen.has(k)) { seen.add(k); out.push(prep(cur)); }
+      cur = norm(cur.map(([x, y]) => [y, -x]));
+    }
+    return out;
+  });
+
+  const mulberry32 = a => () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  // ---------- packing ----------
+  function evalMove(h, rot, x, W) {
+    let land = 0;
+    for (let i = 0; i < rot.w; i++) land = Math.max(land, h[x + i] - rot.bot[i]);
+    let holes = 0;
+    const nh = h.slice();
+    for (let i = 0; i < rot.w; i++) { holes += land + rot.bot[i] - h[x + i]; nh[x + i] = land + rot.top[i] + 1; }
+    let bump = 0, maxH = 0, minH = 1e9, wells = 0;
+    for (let i = 0; i < W; i++) {
+      if (i) bump += Math.abs(nh[i] - nh[i - 1]);
+      maxH = Math.max(maxH, nh[i]); minH = Math.min(minH, nh[i]);
+      const d = Math.min(i ? nh[i - 1] : 1e9, i < W - 1 ? nh[i + 1] : 1e9) - nh[i];
+      if (d >= 3) wells += d - 2;
+    }
+    const score = -holes * 10 - bump - land * 0.8 - (maxH - minH) * 0.4 - wells * 1.5;
+    return { score, land, holes, nh, maxH };
+  }
+
+  function packOnce(counts, W, rng, noise) {
+    const rem = counts.slice();
+    let left = rem.reduce((a, b) => a + b, 0);
+    let heights = Array(W).fill(0), holes = 0;
+    const placed = [];
+    let last = -1;
+    while (left > 0) {
+      const maxRem = Math.max(...rem);
+      let best = null, bestS = -Infinity;
+      for (let t = 0; t < 7; t++) {
+        if (!rem[t]) continue;
+        // use up plentiful pieces first and avoid runs of one color
+        const bal = 1.6 * rem[t] / maxRem - (t === last ? 1.2 : 0);
+        for (const rot of ROTS[t]) for (let x = 0; x <= W - rot.w; x++) {
+          const r = evalMove(heights, rot, x, W);
+          const s = r.score + bal + rng() * noise;
+          if (s > bestS) { bestS = s; best = { t, rot, x, r }; }
+        }
+      }
+      heights = best.r.nh; holes += best.r.holes;
+      placed.push({ habit: best.t, cells: best.rot.cells.map(([dx, dy]) => [best.x + dx, best.r.land + dy]) });
+      rem[best.t]--; left--; last = best.t;
+    }
+    return { placed, heights, holes };
+  }
+
+  function fillBlank(heights, W, limit, rng) {
+    const placed = [];
+    for (let guard = 0; guard < 400; guard++) {
+      let best = null, bestS = -Infinity;
+      const pick = PIECES.map(() => rng() * 3); // vary the blank shapes
+      for (let t = 0; t < 7; t++) for (const rot of ROTS[t]) for (let x = 0; x <= W - rot.w; x++) {
+        const r = evalMove(heights, rot, x, W);
+        if (r.maxH > limit) continue;
+        const s = r.score + pick[t] + rng();
+        if (s > bestS) { bestS = s; best = { t, rot, x, r }; }
+      }
+      if (!best) break;
+      heights = best.r.nh;
+      placed.push({ habit: -1, cells: best.rot.cells.map(([dx, dy]) => [best.x + dx, best.r.land + dy]) });
+    }
+    return placed;
+  }
+
+  function pack(counts, W, seed) {
+    let best = null;
+    const tries = 60;
+    for (let a = 0; a < tries; a++) {
+      const rng = mulberry32(seed * 7919 + a);
+      const res = packOnce(counts, W, rng, a === 0 && seed === 1 ? 0.3 : 1.6);
+      const top = Math.max(0, ...res.heights);
+      let bump = 0;
+      for (let i = 1; i < W; i++) bump += Math.abs(res.heights[i] - res.heights[i - 1]);
+      res.rank = res.holes * 1000 + top * 10 + bump;
+      res.top = top;
+      if (!best || res.rank < best.rank) best = res;
+    }
+    return best;
+  }
+
+  // ---------- drawing ----------
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const f = n => +n.toFixed(2);
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    const k = 1 - amt;
+    return `rgb(${Math.round((n >> 16) * k)},${Math.round(((n >> 8) & 255) * k)},${Math.round((n & 255) * k)})`;
+  }
+  // Outline of a set of screen cells (no holes in tetrominoes, so one loop).
+  function outlinePath(cells, ox, oy, c) {
+    const set = new Set(cells.map(([x, y]) => x + "," + y));
+    const next = new Map();
+    for (const [x, y] of cells) {
+      if (!set.has(x + "," + (y - 1))) next.set(`${x},${y}`, [x + 1, y]);
+      if (!set.has((x + 1) + "," + y)) next.set(`${x + 1},${y}`, [x + 1, y + 1]);
+      if (!set.has(x + "," + (y + 1))) next.set(`${x + 1},${y + 1}`, [x, y + 1]);
+      if (!set.has((x - 1) + "," + y)) next.set(`${x},${y + 1}`, [x, y]);
+    }
+    const [start] = next.keys();
+    let key = start, d = "";
+    for (let i = 0; i < 40; i++) {
+      const [px, py] = key.split(",").map(Number);
+      d += (i ? "L" : "M") + f(ox + px * c) + " " + f(oy + py * c);
+      const n = next.get(key);
+      key = n[0] + "," + n[1];
+      if (key === start) break;
+    }
+    return d + "Z";
+  }
+
+  let clipId = 0;
+  function pieceSvg(cells, ox, oy, c, color, outline) {
+    const d = outlinePath(cells, ox, oy, c);
+    if (outline || !color) return `<path d="${d}" fill="#ffffff" stroke="#1d1d22" stroke-width="${f(c * 0.07)}" stroke-linejoin="round"/>`;
+    const id = "p" + (clipId++);
+    return `<clipPath id="${id}"><path d="${d}"/></clipPath>` +
+      `<path d="${d}" fill="${color}"/>` +
+      `<path d="${d}" fill="none" stroke="${shade(color, 0.22)}" stroke-width="${f(c * 0.34)}" clip-path="url(#${id})"/>` +
+      `<path d="${d}" fill="none" stroke="#1d1d22" stroke-width="${f(c * 0.07)}" stroke-linejoin="round"/>`;
+  }
+
+  function wrapLabel(text, max) {
+    const words = text.trim().split(/\s+/);
+    const lines = [];
+    let cur = "";
+    for (const w of words) {
+      if (cur && (cur + " " + w).length > max) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + " " + w : w;
+    }
+    if (cur) lines.push(cur);
+    return lines.slice(0, 3);
+  }
+
+  function render(st, result) {
+    clipId = 0;
+    const c = st.cell, W = st.cols, m = 4;
+    let pieces = result.placed;
+    const colorTop = result.top;
+    const rows = Math.max(colorTop + st.extra, 4);
+    if (st.blank) pieces = pieces.concat(fillBlank(result.heights, W, rows, mulberry32(st.seed * 31 + 7)));
+
+    const boardW = W * c, boardH = rows * c;
+    const legW = st.showLegend ? Math.max(30, c * 8) : 0;
+    const legGap = st.showLegend ? c : 0;
+    const titleSize = Math.min(14, Math.max(7, c * 2.2));
+    const titleH = st.showTitle ? titleSize * 1.5 : 0;
+
+    // Legend layout: spread items down the board height like the hand-drawn page.
+    const pieceH = PIECES.map(p => Math.max(...p.cells.map(q => q[1])) + 1);
+    const need = pieceH.reduce((a, b) => a + b, 0) * c;
+    const gap = Math.max(c * 0.9, (boardH - need) / 6);
+    const legH = need + gap * 6;
+
+    const contentH = Math.max(boardH, st.showLegend ? legH : 0);
+    const totalW = m * 2 + legW + legGap + boardW;
+    const totalH = m * 2 + titleH + contentH;
+    const bx = m + legW + legGap, by = m + titleH + (contentH - boardH);
+
+    let s = `<svg id="board-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(totalW)} ${f(totalH)}" width="${f(totalW)}mm" height="${f(totalH)}mm" role="img" aria-label="${esc(st.title || MONTHS[st.month])} habit board">`;
+    if (st.cut) s += `<rect x="0.3" y="0.3" width="${f(totalW - 0.6)}" height="${f(totalH - 0.6)}" fill="none" stroke="#9aa0ad" stroke-width="0.25" stroke-dasharray="2 1.5"/>`;
+
+    if (st.showTitle) {
+      const title = st.title || MONTHS[st.month];
+      const pal = st.habits.map(h => h.color);
+      let spans = "", i = 0;
+      for (const ch of title) {
+        const fill = st.outline || ch === " " ? "#ffffff" : pal[i++ % pal.length];
+        spans += `<tspan fill="${fill}">${esc(ch)}</tspan>`;
+      }
+      s += `<text x="${f(bx + boardW / 2)}" y="${f(m + titleSize * 1.05)}" text-anchor="middle" font-family="Bungee, 'Arial Black', Impact, sans-serif" font-size="${f(titleSize)}" stroke="#1d1d22" stroke-width="${f(titleSize * 0.05)}" stroke-linejoin="round" paint-order="stroke">${spans}</text>`;
+    }
+
+    if (st.showLegend) {
+      let y = m + titleH + (contentH - legH);
+      const fontSize = Math.max(2.6, c * 0.7);
+      PIECES.forEach((p, i) => {
+        const h = st.habits[i];
+        const pw = Math.max(...p.cells.map(q => q[0])) + 1;
+        const px = m + legW - pw * c;
+        s += pieceSvg(p.cells, px, y, c, h.color, st.outline);
+        const lines = wrapLabel(h.name || "", Math.max(8, Math.round((legW - 2.2 * c) / (fontSize * 0.5))));
+        const cy = y + pieceH[i] * c / 2 - (lines.length - 1) * fontSize * 0.55;
+        const color = st.outline ? "#2a2a30" : shade(h.color, 0.12);
+        lines.forEach((ln, k) => {
+          s += `<text x="${f(px - c * 0.5)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="end" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}">${esc(ln)}</text>`;
+        });
+        y += pieceH[i] * c + gap;
+      });
+    }
+
+    s += `<rect x="${f(bx)}" y="${f(by)}" width="${f(boardW)}" height="${f(boardH)}" fill="#ffffff"/>`;
+    for (const p of pieces) {
+      const cells = p.cells.map(([x, y]) => [x, rows - 1 - y]);
+      const color = p.habit >= 0 ? st.habits[p.habit].color : null;
+      s += pieceSvg(cells, bx, by, c, color, st.outline);
+    }
+    s += `<rect x="${f(bx)}" y="${f(by)}" width="${f(boardW)}" height="${f(boardH)}" fill="none" stroke="#1d1d22" stroke-width="${f(c * 0.11)}"/>`;
+    s += `</svg>`;
+    return { svg: s, rows };
+  }
+
+  // ---------- state ----------
+  const KEY = "habit-tetris-v1";
+  const now = new Date();
+  const defaults = () => ({
+    month: now.getMonth(), title: "", cols: 10, cell: 5, extra: 3,
+    blank: true, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
+    habits: DEFAULT_NAMES.map((name, i) => ({ name, color: PALETTES[now.getMonth()][i], count: EXAMPLE_COUNTS[i] })),
+  });
+  let st = defaults();
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && Array.isArray(saved.habits) && saved.habits.length === 7) st = Object.assign(st, saved);
+  } catch (e) { /* storage unavailable: start from defaults */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+
+  const $ = id => document.getElementById(id);
+  const monthSel = $("month");
+  MONTHS.forEach((m, i) => monthSel.add(new Option(m, i)));
+
+  function miniPiece(i, color) {
+    const p = PIECES[i];
+    const cells = p.cells.map(([x, y]) => `<rect x="${x * 6 + 1}" y="${y * 6 + 1}" width="6" height="6" fill="${color}" stroke="#1d1d22" stroke-width="0.8"/>`).join("");
+    return `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g transform="translate(${p.key === "I" ? 9 : p.key === "O" ? 6 : 6} ${p.key === "O" ? 6 : p.key === "I" ? 0 : 3})">${cells}</g></svg>`;
+  }
+
+  function buildHabits() {
+    const box = $("habits");
+    box.innerHTML = "";
+    st.habits.forEach((h, i) => {
+      const row = document.createElement("div");
+      row.className = "habit";
+      row.innerHTML = `<span id="icon-${i}">${miniPiece(i, h.color)}</span>
+        <input type="text" id="name-${i}" aria-label="Habit for the ${PIECES[i].key} piece" value="${esc(h.name)}">
+        <input type="color" id="color-${i}" aria-label="Color for ${esc(h.name)}" value="${h.color}">
+        <div class="stepper">
+          <button type="button" id="minus-${i}" aria-label="One fewer">−</button>
+          <input type="number" id="count-${i}" min="0" max="99" aria-label="Times this month" value="${h.count}">
+          <button type="button" id="plus-${i}" aria-label="One more">+</button>
+        </div>`;
+      box.appendChild(row);
+      const setCount = v => { h.count = Math.max(0, Math.min(99, v | 0)); $("count-" + i).value = h.count; st.example = false; schedule(); };
+      $("name-" + i).addEventListener("input", e => { h.name = e.target.value; schedule(); });
+      $("color-" + i).addEventListener("input", e => { h.color = e.target.value; $("icon-" + i).innerHTML = miniPiece(i, h.color); schedule(); });
+      $("count-" + i).addEventListener("input", e => setCount(+e.target.value));
+      $("minus-" + i).addEventListener("click", () => setCount(h.count - 1));
+      $("plus-" + i).addEventListener("click", () => setCount(h.count + 1));
+    });
+  }
+
+  function syncInputs() {
+    monthSel.value = st.month;
+    $("title").value = st.title;
+    $("title").placeholder = MONTHS[st.month];
+    $("cols").value = st.cols; $("cell").value = st.cell; $("extra").value = st.extra;
+    for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).checked = st[k];
+  }
+
+  function applyPalette() {
+    st.habits.forEach((h, i) => { h.color = PALETTES[st.month][i]; });
+    buildHabits();
+  }
+
+  let timer = 0;
+  function schedule() { clearTimeout(timer); timer = setTimeout(update, 60); }
+
+  function update() {
+    const counts = st.habits.map(h => h.count);
+    const total = counts.reduce((a, b) => a + b, 0);
+    $("total").textContent = `${total} pieces, ${total * 4} squares`;
+    $("example-note").hidden = !st.example;
+    const result = pack(counts, st.cols, st.seed);
+    const out = render(st, result);
+    $("print-area").innerHTML = out.svg;
+    const svg = $("board-svg");
+    const mmW = parseFloat(svg.getAttribute("width")), mmH = parseFloat(svg.getAttribute("height"));
+    $("stats").innerHTML =
+      `<span class="chip">${st.cols} × ${out.rows} squares</span>` +
+      `<span class="chip">Prints ${Math.round(mmW)} × ${Math.round(mmH)} mm</span>` +
+      `<span class="chip${result.holes ? " warn" : ""}">${result.holes ? result.holes + (result.holes === 1 ? " gap" : " gaps") : "No gaps"}</span>`;
+    save();
+  }
+
+  // ---------- wiring ----------
+  monthSel.addEventListener("change", () => { st.month = +monthSel.value; $("title").placeholder = MONTHS[st.month]; applyPalette(); schedule(); });
+  $("title").addEventListener("input", e => { st.title = e.target.value; schedule(); });
+  const num = (id, lo, hi) => $(id).addEventListener("input", e => {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v)) { st[id] = Math.max(lo, Math.min(hi, v)); schedule(); }
+  });
+  num("cols", 6, 16); num("cell", 3, 8); num("extra", 0, 12);
+  for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
+  $("shuffle").addEventListener("click", () => { st.seed = (st.seed % 100000) + 1 + Math.floor(Math.random() * 1000); update(); });
+  $("resetColors").addEventListener("click", () => { applyPalette(); update(); });
+  $("clear").addEventListener("click", () => { st.habits.forEach(h => { h.count = 0; }); st.example = false; buildHabits(); update(); });
+  $("print").addEventListener("click", () => window.print());
+
+  let framed = true;
+  try { framed = window.self !== window.top; } catch (e) {}
+  if (framed) { $("print").hidden = true; $("frame-hint").hidden = false; }
+
+  syncInputs();
+  buildHabits();
+  update();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
+})();
+</script>
