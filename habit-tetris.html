@@ -162,12 +162,12 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       <div class="group">
         <h2>Board</h2>
         <div class="row">
-          <label>Columns <input id="cols" type="number" min="6" max="16" step="1"></label>
+          <label>Columns <input id="cols" type="number" min="6" max="20" step="1"></label>
           <label>Square size (mm) <input id="cell" type="number" min="3" max="8" step="0.5"></label>
-          <label>Empty rows on top <input id="extra" type="number" min="0" max="40" step="1"></label>
+          <label>Rows <input id="rows" type="number" min="4" max="60" step="1"></label>
         </div>
         <div class="checks">
-          <label><input id="blank" type="checkbox"> Draw blank pieces on top</label>
+          <label><input id="blank" type="checkbox"> Fill the empty space with blank pieces</label>
           <label><input id="outline" type="checkbox"> Outlines only (color it in yourself)</label>
           <label><input id="showTitle" type="checkbox"> Month title</label>
           <label><input id="showLegend" type="checkbox"> Habit legend</label>
@@ -271,10 +271,24 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     return { score, land, holes, nh, maxH };
   }
 
+  // Edges the piece would share with pieces of the same habit; used to spread colors apart.
+  function sameTouches(own, W, cells, x, land, t) {
+    let n = 0;
+    for (const [dx, dy] of cells) {
+      const cx = x + dx, cy = land + dy;
+      if (cx > 0 && own[cy * W + cx - 1] === t) n++;
+      if (cx < W - 1 && own[cy * W + cx + 1] === t) n++;
+      if (cy > 0 && own[(cy - 1) * W + cx] === t) n++;
+      if (own[(cy + 1) * W + cx] === t) n++;
+    }
+    return n;
+  }
+
   function packOnce(counts, W, rng, noise) {
     const rem = counts.slice();
     let left = rem.reduce((a, b) => a + b, 0);
     let heights = Array(W).fill(0), holes = 0;
+    const own = new Int8Array(W * (Math.ceil(left * 4 / W) + 60)).fill(-1);
     const placed = [];
     let last = -1;
     while (left > 0) {
@@ -286,11 +300,12 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         const bal = 1.6 * rem[t] / maxRem - (t === last ? 1.2 : 0);
         for (const rot of ROTS[t]) for (let x = 0; x <= W - rot.w; x++) {
           const r = evalMove(heights, rot, x, W);
-          const s = r.score + bal + rng() * noise;
+          const s = r.score + bal - 2.5 * sameTouches(own, W, rot.cells, x, r.land, t) + rng() * noise;
           if (s > bestS) { bestS = s; best = { t, rot, x, r }; }
         }
       }
       heights = best.r.nh; holes += best.r.holes;
+      for (const [dx, dy] of best.rot.cells) own[(best.r.land + dy) * W + best.x + dx] = best.t;
       placed.push({ habit: best.t, cells: best.rot.cells.map(([dx, dy]) => [best.x + dx, best.r.land + dy]) });
       rem[best.t]--; left--; last = best.t;
     }
@@ -396,7 +411,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     const c = st.cell, W = st.cols, m = 4;
     let pieces = result.placed;
     const colorTop = result.top;
-    const rows = Math.max(colorTop + st.extra, 4);
+    const rows = Math.max(colorTop, st.rows);
     if (st.blank) pieces = pieces.concat(fillBlank(result.heights, W, rows, mulberry32(st.seed * 31 + 7)));
 
     const boardW = W * c, boardH = rows * c;
@@ -463,14 +478,18 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   const KEY = "habit-tetris-v1";
   const now = new Date();
   const defaults = () => ({
-    month: now.getMonth(), title: "", cols: 10, cell: 5, extra: 3,
-    blank: true, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
+    month: now.getMonth(), title: "", cols: 16, cell: 5, rows: 30,
+    blank: false, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
     habits: DEFAULT_NAMES.map((name, i) => ({ name, color: PALETTES[now.getMonth()][i], count: EXAMPLE_COUNTS[i] })),
   });
   let st = defaults();
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (saved && Array.isArray(saved.habits) && saved.habits.length === 7) st = Object.assign(st, saved);
+    if (saved && Array.isArray(saved.habits) && saved.habits.length === 7) {
+      // Boards saved before the fixed-rows setting keep their habits but take the new board defaults.
+      if (saved.rows === undefined) { delete saved.cols; delete saved.blank; delete saved.extra; }
+      st = Object.assign(st, saved);
+    }
   } catch (e) { /* storage unavailable: start from defaults */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
 
@@ -512,7 +531,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     monthSel.value = st.month;
     $("title").value = st.title;
     $("title").placeholder = MONTHS[st.month];
-    $("cols").value = st.cols; $("cell").value = st.cell; $("extra").value = st.extra;
+    $("cols").value = st.cols; $("cell").value = st.cell; $("rows").value = st.rows;
     for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).checked = st[k];
   }
 
@@ -586,9 +605,10 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     let text = `Counted ${total} pieces`;
     if (r.days) text += ` over ${r.days} days`;
     if (r.days && r.days < dim) {
-      // leave room on top for the rest of the month at the current pace
-      st.extra = Math.min(40, Math.ceil(total * 4 * (dim - r.days) / r.days / st.cols) + 1);
-      text += `. Left ${st.extra} empty rows for the other ${dim - r.days} days of ${MONTHS[st.month]}`;
+      // check the rest of the month fits at the current pace
+      const pace = Math.round(total * dim / r.days), need = Math.ceil(pace * 4 / st.cols);
+      text += `. At this pace ${MONTHS[st.month]} ends near ${pace} pieces, about ${need} of your ${st.rows} rows`;
+      if (need > st.rows) text += ", so add rows or columns";
     }
     text += ".";
     if (r.unsure.length) text += ` Counted ${r.unsure.length} item${r.unsure.length > 1 ? "s" : ""} marked "?": ${r.unsure.join("; ")}.`;
@@ -604,7 +624,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     const v = parseFloat(e.target.value);
     if (!isNaN(v)) { st[id] = Math.max(lo, Math.min(hi, v)); schedule(); }
   });
-  num("cols", 6, 16); num("cell", 3, 8); num("extra", 0, 40);
+  num("cols", 6, 20); num("cell", 3, 8); num("rows", 4, 60);
   for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
   $("shuffle").addEventListener("click", () => { st.seed = (st.seed % 100000) + 1 + Math.floor(Math.random() * 1000); update(); });
   $("resetColors").addEventListener("click", () => { applyPalette(); update(); });
