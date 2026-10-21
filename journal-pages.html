@@ -109,7 +109,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 }
 .page.cut { outline: 0.25mm dashed #9aa0ad; outline-offset: -0.15mm; }
 .content { position: absolute; overflow: hidden; }
-.blk { margin: 0 0 3.2mm; font-size: 4.5mm; line-height: 6.2mm; }
+.blk { margin: 0 0 2.6mm; font-size: 4.5mm; line-height: 5.8mm; }
 .blk::after { content: ""; display: block; clear: both; }
 .blk p { margin: 0; }
 .blk .arrow { padding-left: 9mm; text-indent: -9mm; }
@@ -123,16 +123,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   content: ""; position: absolute; inset: 0; background: var(--tag); z-index: -1;
   filter: url(#marker); opacity: 0.92;
 }
-.fig { width: var(--w); margin: 0.8mm 0 2mm; }
+.fig { width: var(--w); margin: 0.6mm 0 1mm; }
 .fig.right { float: right; margin-left: 4mm; }
 .fig.left { float: left; margin-right: 4mm; }
 .fig img { display: block; width: 100%; }
-.figrow { clear: both; display: flex; justify-content: center; gap: 4mm; padding-top: 2.5mm; }
+.figrow { clear: both; display: flex; justify-content: center; gap: 4mm; padding-top: 1.5mm; }
 .figrow .fig { margin: 0; flex: 0 1 var(--w); min-width: 0; }
-.figrow .fig .ph { width: 100%; }
+.fig { height: var(--h); }
+.fig img { height: 100%; object-fit: cover; }
 .fig .ph {
   border: 0.35mm solid var(--ink); display: grid; place-items: center; text-align: center;
-  padding: 2mm; font-size: 4.4mm; line-height: 1.15; aspect-ratio: var(--ar);
+  padding: 2mm; font-size: 4.4mm; line-height: 1.15; height: 100%;
 }
 
 @media print {
@@ -394,7 +395,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
           for (let k = 0; k < n; k++) {
             // several photos sit in a row under the paragraph; one floats beside it
             images.push({ id: uid(), caption: im.caption, kind: im.kind, para: Math.max(1, para),
-              side: n > 1 ? "row" : im.kind === "book" ? "left" : "right", w: n > 1 ? (n === 2 ? 11 : n === 3 ? 7 : 5) : im.kind === "photo" ? 7 : 6 });
+              side: n > 1 ? "row" : im.kind === "book" ? "left" : "right", w: 6, h: 8 });
           }
         }
       }
@@ -452,7 +453,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
       $("tag-" + en.id).oninput = e => { en.tag = e.target.value; d.querySelector(".chip").textContent = en.tag; schedule(); };
       $("col-" + en.id).oninput = e => { en.color = e.target.value; d.querySelector(".chip").style.background = en.color; schedule(); };
       $("txt-" + en.id).oninput = e => { en.text = e.target.value; schedule(); };
-      $("addimg-" + en.id).onclick = () => { en.images.push({ id: uid(), caption: "Photo", kind: "photo", para: 1, side: "right", w: 6 }); buildEntries(); render(); };
+      $("addimg-" + en.id).onclick = () => { en.images.push({ id: uid(), caption: "Photo", kind: "photo", para: 1, side: "right", w: 6, h: 8 }); buildEntries(); render(); };
       $("del-" + en.id).onclick = () => { st.entries.splice(ei, 1); buildEntries(); render(); };
       const ib = $("imgs-" + en.id);
       en.images.forEach((im, ii) => {
@@ -465,7 +466,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             <div class="row">
               <label>Paragraph <input type="number" min="1" id="para-${im.id}" value="${im.para}"></label>
               <label>Side <select id="side-${im.id}"><option value="left">Left</option><option value="right">Right</option><option value="row">Row below</option></select></label>
-              <label>Width <select id="w-${im.id}">${[4, 5, 6, 7, 8, 10, 12].map(n => `<option value="${n}">${n} squares</option>`).join("")}</select></label>
+              <label>Size <span style="display:flex;gap:4px;align-items:center"><select id="w-${im.id}" aria-label="Width in squares">${[3, 4, 5, 6, 7, 8, 10, 12].map(n => `<option value="${n}">${n}</option>`).join("")}</select>×<select id="h-${im.id}" aria-label="Height in squares">${[3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => `<option value="${n}">${n}</option>`).join("")}</select></span></label>
             </div>
             <div class="actions">
               ${src ? `<button class="btn small" type="button" id="clr-${im.id}">Remove photo</button>` : ""}
@@ -473,11 +474,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             </div>
           </div>`;
         ib.appendChild(r);
-        $("side-" + im.id).value = im.side; $("w-" + im.id).value = im.w;
+        $("side-" + im.id).value = im.side; $("w-" + im.id).value = im.w; $("h-" + im.id).value = im.h || 8;
         $("cap-" + im.id).oninput = e => { im.caption = e.target.value; schedule(); };
         $("para-" + im.id).oninput = e => { im.para = Math.max(1, +e.target.value || 1); schedule(); };
         $("side-" + im.id).onchange = e => { im.side = e.target.value; schedule(); };
         $("w-" + im.id).onchange = e => { im.w = +e.target.value; schedule(); };
+        $("h-" + im.id).onchange = e => { im.h = +e.target.value; schedule(); };
         $("rm-" + im.id).onclick = () => { en.images.splice(ii, 1); buildEntries(); render(); };
         if (src) $("clr-" + im.id).onclick = () => { photos.delete(im.id); try { db && db.transaction("photos", "readwrite").objectStore("photos").delete(im.id); } catch (e) {} buildEntries(); render(); };
         $("file-" + im.id).onchange = e => loadPhoto(e.target.files[0], im.id);
@@ -509,9 +511,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 
   function figHtml(im) {
     const src = photos.get(im.id);
-    const ar = im.kind === "photo" ? "4 / 3" : "2 / 3";
-    const inner = src ? `<img src="${src}" alt="${esc(im.caption)}">` : `<div class="ph" style="--ar:${ar}">${esc(im.caption)}</div>`;
-    return `<div class="fig ${im.side}" style="--w:${im.w * 5}mm">${inner}</div>`;
+    const inner = src ? `<img src="${src}" alt="${esc(im.caption)}">` : `<div class="ph">${esc(im.caption)}</div>`;
+    // every picture fills a frame measured in 5 mm squares; photos are cropped to fit
+    return `<div class="fig ${im.side}" style="--w:${im.w * 5}mm;--h:${(im.h || 8) * 5}mm">${inner}</div>`;
   }
 
   function paraHtml(text) {
@@ -574,10 +576,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     host.appendChild(pg);
     return c;
   }
-  // keep ~2.5 mm spare: printed text sets slightly taller than on screen
+  // keep ~1 mm spare: printed text sets slightly taller than on screen
   const overflows = c => {
     const last = c.lastElementChild;
-    return !!last && last.offsetTop + last.offsetHeight > c.clientHeight - 10;
+    return !!last && last.offsetTop + last.offsetHeight > c.clientHeight - 4;
   };
 
   function render() {
