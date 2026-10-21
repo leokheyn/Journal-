@@ -54,6 +54,9 @@ body {
 .group h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .note { margin: 0; font-size: 13px; color: var(--muted); }
 .row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.row > .field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 110px; min-width: 0; }
+.group > *, #entries > * { min-width: 0; }
+#entries { grid-template-columns: minmax(0, 1fr); }
 .row > label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 110px; min-width: 0; }
 input[type="text"], input[type="number"], select, textarea {
   font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
@@ -80,7 +83,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .entry > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; gap: 10px; align-items: center; }
 .entry > summary::-webkit-details-marker { display: none; }
 .entry .chip { font: 15px/1 var(--font-hand); padding: 4px 10px; border-radius: 3px; color: #16161a; }
-.entry .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry .sub { color: var(--muted); font-size: 13px; flex: 1 1 0; width: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry-body { padding: 0 12px 12px; display: grid; gap: 10px; }
 .img-row { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
 .thumb { width: 54px; height: 72px; border: 1px dashed var(--muted); border-radius: 4px; display: grid; place-items: center; overflow: hidden; font-size: 11px; color: var(--muted); text-align: center; cursor: pointer; background: var(--bg); }
@@ -175,9 +178,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         <textarea id="note" rows="6" placeholder="Monday 10/12&#10;- [ ] Walk 8k&#10;Woke up early and got to work…"></textarea>
         <div class="row">
           <label>Start after (already written) <input id="after" type="text" placeholder="10/10"></label>
-          <label>First weekday color
-            <div class="swatches" id="first-color"></div>
-          </label>
+          <div class="field">First weekday color
+            <div class="swatches" id="first-color" role="group" aria-label="First weekday color"></div>
+          </div>
         </div>
         <div class="row"><button class="btn primary" id="build" type="button">Build pages</button></div>
         <p class="note" id="build-msg" hidden></p>
@@ -671,7 +674,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     if (!r.entries.length) { msg.textContent = `Found ${r.days} days, but none after ${st.after} have paragraphs to print.`; return; }
     st.entries = r.entries; st.example = false;
     const skipped = r.kept - r.entries.reduce((n, e) => n + (/S\/Su/.test(e.tag) ? 2 : 1), 0);
-    msg.textContent = `Made ${r.entries.length} entries from ${r.kept} days${st.after ? " after " + st.after : ""}.` + (skipped > 0 ? ` ${skipped} day${skipped > 1 ? "s" : ""} had no paragraphs and were left out.` : "");
+    msg.textContent = `Made ${r.entries.length} ${r.entries.length === 1 ? "entry" : "entries"} from ${r.kept} ${r.kept === 1 ? "day" : "days"}${st.after ? " after " + st.after : ""}.` + (skipped > 0 ? ` ${skipped} day${skipped > 1 ? "s" : ""} had no paragraphs and were left out.` : "");
     buildEntries(); render();
   };
   $("print").onclick = () => window.print();
