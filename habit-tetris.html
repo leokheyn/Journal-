@@ -168,6 +168,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         </div>
         <div class="checks">
           <label><input id="blank" type="checkbox"> Fill the empty space with blank pieces</label>
+          <label><input id="dots" type="checkbox"> Dot grid in empty squares</label>
           <label><input id="outline" type="checkbox"> Outlines only (color it in yourself)</label>
           <label><input id="showTitle" type="checkbox"> Month title</label>
           <label><input id="showLegend" type="checkbox"> Habit legend</label>
@@ -410,67 +411,69 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 
   function render(st, result) {
     clipId = 0;
-    const c = st.cell, W = st.cols, m = 4;
+    const c = st.cell, W = st.cols;
     let pieces = result.placed;
     const colorTop = result.top;
     const rows = Math.max(colorTop, st.rows);
     if (st.blank) pieces = pieces.concat(fillBlank(result.heights, W, rows, mulberry32(st.seed * 31 + 7)));
 
-    const boardW = W * c, boardH = rows * c;
-    const legW = st.showLegend ? Math.max(34, c * 8.5) : 0;
-    const legGap = st.showLegend ? c : 0;
-    const titleSize = Math.min(14, Math.max(7, c * 2.2));
-    const titleH = st.showTitle ? titleSize * 1.5 : 0;
-
-    // Legend layout: spread items down the board height like the hand-drawn page.
+    // Everything sits on the journal's grid: margins are whole squares so the print lines up with the dots.
+    const keyCols = st.showLegend ? 6 : 2, rightCols = 2, aboveRows = st.showTitle ? 5 : 2, belowRows = 2;
     const pieceH = PIECES.map(p => Math.max(...p.cells.map(q => q[1])) + 1);
-    const need = pieceH.reduce((a, b) => a + b, 0) * c;
-    const gap = Math.max(c * 0.9, (boardH - need) / 6);
-    const legH = need + gap * 6;
+    const need = pieceH.reduce((a, b) => a + b, 0);
+    const gapRows = Math.max(1, (rows - need) / 6);
+    const legRows = Math.ceil(need + gapRows * 6);
+    const contentRows = Math.max(rows, st.showLegend ? legRows : 0);
 
-    const contentH = Math.max(boardH, st.showLegend ? legH : 0);
-    const totalW = m * 2 + legW + legGap + boardW;
-    const totalH = m * 2 + titleH + contentH;
-    const bx = m + legW + legGap, by = m + titleH + (contentH - boardH);
+    const boardW = W * c, boardH = rows * c;
+    const totalW = (keyCols + W + rightCols) * c;
+    const totalH = (aboveRows + contentRows + belowRows) * c;
+    const bx = keyCols * c, by = (aboveRows + contentRows - rows) * c;
 
     let s = `<svg id="board-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(totalW)} ${f(totalH)}" width="${f(totalW)}mm" height="${f(totalH)}mm" role="img" aria-label="${esc(st.title || MONTHS[st.month])} habit board">`;
-    if (st.cut) s += `<rect x="0.3" y="0.3" width="${f(totalW - 0.6)}" height="${f(totalH - 0.6)}" fill="none" stroke="#9aa0ad" stroke-width="0.25" stroke-dasharray="2 1.5"/>`;
+    s += `<defs><pattern id="board-dots" patternUnits="userSpaceOnUse" x="${f(bx - c / 2)}" y="${f(by - c / 2)}" width="${f(c)}" height="${f(c)}"><circle cx="${f(c / 2)}" cy="${f(c / 2)}" r="${f(c * 0.05)}" fill="#8f939b"/></pattern></defs>`;
+    if (st.cut) s += `<rect x="0.15" y="0.15" width="${f(totalW - 0.3)}" height="${f(totalH - 0.3)}" fill="none" stroke="#9aa0ad" stroke-width="0.25" stroke-dasharray="2 1.5"/>`;
 
     if (st.showTitle) {
       const title = st.title || MONTHS[st.month];
       const pal = st.habits.map(h => h.color);
+      const titleSize = Math.min(c * 2.6, boardW / Math.max(4, title.length) * 1.25);
       let spans = "", i = 0;
       for (const ch of title) {
         const fill = st.outline || ch === " " ? "#ffffff" : pal[i++ % pal.length];
         spans += `<tspan fill="${fill}">${esc(ch)}</tspan>`;
       }
-      s += `<text x="${f(bx + boardW / 2)}" y="${f(m + titleSize * 1.05)}" text-anchor="middle" font-family="Bungee, 'Arial Black', Impact, sans-serif" font-size="${f(titleSize)}" stroke="#1d1d22" stroke-width="${f(titleSize * 0.05)}" stroke-linejoin="round" paint-order="stroke">${spans}</text>`;
+      s += `<text x="${f(bx + boardW / 2)}" y="${f(by - aboveRows * c / 2 + titleSize * 0.36)}" text-anchor="middle" font-family="Bungee, 'Arial Black', Impact, sans-serif" font-size="${f(titleSize)}" stroke="#1d1d22" stroke-width="${f(titleSize * 0.05)}" stroke-linejoin="round" paint-order="stroke">${spans}</text>`;
     }
 
     if (st.showLegend) {
-      let y = m + titleH + (contentH - legH);
-      const fontSize = Math.max(3.4, c * 0.95);
+      // Six columns: the piece keeps one empty column before the board, the label takes the rest.
+      const fontSize = Math.max(3, c * 0.72);
+      let row = 0;
       PIECES.forEach((p, i) => {
         const h = st.habits[i];
         const pw = Math.max(...p.cells.map(q => q[0])) + 1;
+        const y = by + Math.round(row) * c;
         // Alternate sides like the hand-drawn key: label then piece, then piece then label.
         const right = i % 2 === 0;
-        const px = right ? m + legW - pw * c : m;
+        const px = right ? (keyCols - 1 - pw) * c : 0;
         s += pieceSvg(p.cells, px, y, c, h.color, st.outline);
-        const lines = wrapLabel(h.name || "", Math.max(6, Math.floor((legW - 2.6 * c) / (fontSize * 0.48))));
+        const room = right ? px - c * 0.6 : (keyCols - 1) * c - (pw * c + c * 0.4);
+        const lines = wrapLabel(h.name || "", Math.max(5, Math.floor(room / (fontSize * 0.47))));
         const cy = y + pieceH[i] * c / 2 - (lines.length - 1) * fontSize * 0.55;
         const n = parseInt(h.color.slice(1), 16);
         const light = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255 > 0.6;
         const color = st.outline ? "#2a2a30" : shade(h.color, light ? 0.35 : 0.12);
-        const tx = right ? px - c * 0.6 : px + pw * c + c * 0.6;
+        const tx = right ? px - c * 0.4 : pw * c + c * 0.4;
         lines.forEach((ln, k) => {
           s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="${right ? "end" : "start"}" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}">${esc(ln)}</text>`;
         });
-        y += pieceH[i] * c + gap;
+        row += pieceH[i] + gapRows;
       });
     }
 
     s += `<rect x="${f(bx)}" y="${f(by)}" width="${f(boardW)}" height="${f(boardH)}" fill="#ffffff"/>`;
+    if (st.dots) s += `<rect x="${f(bx + c / 2)}" y="${f(by + c / 2)}" width="${f(boardW - c)}" height="${f(boardH - c)}" fill="url(#board-dots)"/>`;
     for (const p of pieces) {
       const cells = p.cells.map(([x, y]) => [x, rows - 1 - y]);
       const color = p.habit >= 0 ? st.habits[p.habit].color : null;
@@ -486,7 +489,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   const now = new Date();
   const defaults = () => ({
     month: now.getMonth(), title: "", cols: 16, cell: 5, rows: 30,
-    blank: false, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
+    blank: false, dots: true, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
     habits: DEFAULT_NAMES.map((name, i) => ({ name, color: PALETTES[now.getMonth()][i], count: EXAMPLE_COUNTS[i] })),
   });
   let st = defaults();
@@ -539,7 +542,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     $("title").value = st.title;
     $("title").placeholder = MONTHS[st.month];
     $("cols").value = st.cols; $("cell").value = st.cell; $("rows").value = st.rows;
-    for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).checked = st[k];
+    for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut"]) $(k).checked = st[k];
   }
 
   function applyPalette() {
@@ -632,7 +635,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     if (!isNaN(v)) { st[id] = Math.max(lo, Math.min(hi, v)); schedule(); }
   });
   num("cols", 6, 20); num("cell", 3, 8); num("rows", 4, 60);
-  for (const k of ["blank", "outline", "showTitle", "showLegend", "cut"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
+  for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
   $("shuffle").addEventListener("click", () => { st.seed = (st.seed % 100000) + 1 + Math.floor(Math.random() * 1000); update(); });
   $("resetColors").addEventListener("click", () => { applyPalette(); update(); });
   $("clear").addEventListener("click", () => { st.habits.forEach(h => { h.count = 0; }); st.example = false; buildHabits(); update(); });
