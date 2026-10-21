@@ -418,7 +418,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     if (st.blank) pieces = pieces.concat(fillBlank(result.heights, W, rows, mulberry32(st.seed * 31 + 7)));
 
     // Everything sits on the journal's grid: margins are whole squares so the print lines up with the dots.
-    const keyCols = st.showLegend ? 6 : 2, rightCols = 2, aboveRows = st.showTitle ? 5 : 2, belowRows = 2;
+    const leftCols = 1, keyCols = st.showLegend ? 6 : 1, rightCols = 1, aboveRows = st.showTitle ? 4 : 1, belowRows = 1;
     const pieceH = PIECES.map(p => Math.max(...p.cells.map(q => q[1])) + 1);
     const need = pieceH.reduce((a, b) => a + b, 0);
     const gapRows = Math.max(1, (rows - need) / 6);
@@ -426,9 +426,9 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     const contentRows = Math.max(rows, st.showLegend ? legRows : 0);
 
     const boardW = W * c, boardH = rows * c;
-    const totalW = (keyCols + W + rightCols) * c;
+    const totalW = (leftCols + keyCols + W + rightCols) * c;
     const totalH = (aboveRows + contentRows + belowRows) * c;
-    const bx = keyCols * c, by = (aboveRows + contentRows - rows) * c;
+    const lx = leftCols * c, bx = lx + keyCols * c, by = (aboveRows + contentRows - rows) * c;
 
     let s = `<svg id="board-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(totalW)} ${f(totalH)}" width="${f(totalW)}mm" height="${f(totalH)}mm" role="img" aria-label="${esc(st.title || MONTHS[st.month])} habit board">`;
     s += `<defs><pattern id="board-dots" patternUnits="userSpaceOnUse" x="${f(bx - c / 2)}" y="${f(by - c / 2)}" width="${f(c)}" height="${f(c)}"><circle cx="${f(c / 2)}" cy="${f(c / 2)}" r="${f(c * 0.05)}" fill="#8f939b"/></pattern></defs>`;
@@ -456,7 +456,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         const y = by + Math.round(row) * c;
         // Alternate sides like the hand-drawn key: label then piece, then piece then label.
         const right = i % 2 === 0;
-        const px = right ? (keyCols - 1 - pw) * c : 0;
+        const px = lx + (right ? (keyCols - 1 - pw) * c : 0);
         s += pieceSvg(p.cells, px, y, c, h.color, st.outline);
         const room = right ? px - c * 0.6 : (keyCols - 1) * c - (pw * c + c * 0.4);
         const lines = wrapLabel(h.name || "", Math.max(5, Math.floor(room / (fontSize * 0.47))));
@@ -464,7 +464,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         const n = parseInt(h.color.slice(1), 16);
         const light = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255 > 0.6;
         const color = st.outline ? "#2a2a30" : shade(h.color, light ? 0.35 : 0.12);
-        const tx = right ? px - c * 0.4 : pw * c + c * 0.4;
+        const tx = right ? px - c * 0.4 : px + pw * c + c * 0.4;
         lines.forEach((ln, k) => {
           s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="${right ? "end" : "start"}" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}">${esc(ln)}</text>`;
         });
