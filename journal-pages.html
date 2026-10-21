@@ -1,0 +1,584 @@
+<title>Journal Catch-Up</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bungee&family=Patrick+Hand+SC&display=swap">
+<style>
+/* Layout: editor on the left, printable journal pages on dot-grid paper on the right; stacks on phones. */
+:root {
+  --bg: #eceef3;
+  --panel: #ffffff;
+  --fg: #1b1e2b;
+  --muted: #5b6172;
+  --line: #d4d8e1;
+  --accent: #3a3fd8;
+  --accent-fg: #ffffff;
+  --desk: #d9dce4;
+  --font-display: "Bungee", "Arial Black", Impact, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Patrick Hand SC", "Comic Sans MS", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141c; --panel: #1b1e29; --fg: #e8eaf2; --muted: #9aa0b2; --line: #2e3242;
+    --accent: #8d92ff; --accent-fg: #12141c; --desk: #232634;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141c; --panel: #1b1e29; --fg: #e8eaf2; --muted: #9aa0b2; --line: #2e3242;
+  --accent: #8d92ff; --accent-fg: #12141c; --desk: #232634;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.45 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.top h1 { font: 400 28px/1 var(--font-display); margin: 0; letter-spacing: 0.02em; }
+.top p { margin: 0; color: var(--muted); flex: 1 1 260px; min-width: 0; }
+.layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.controls { display: grid; gap: 14px; min-width: 0; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.group h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.row > label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 110px; min-width: 0; }
+input[type="text"], input[type="number"], select, textarea {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0;
+}
+textarea { font-size: 14px; line-height: 1.4; resize: vertical; }
+input[type="color"] { width: 40px; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.checks label { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+.checks input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.btn { font: 700 14px/1 var(--font-body); padding: 10px 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.small { padding: 7px 10px; font-size: 13px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.swatch[aria-pressed="true"] { border-color: var(--fg); }
+
+.entry { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.entry > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; gap: 10px; align-items: center; }
+.entry > summary::-webkit-details-marker { display: none; }
+.entry .chip { font: 15px/1 var(--font-hand); padding: 4px 10px; border-radius: 3px; color: #16161a; }
+.entry .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-body { padding: 0 12px 12px; display: grid; gap: 10px; }
+.img-row { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.thumb { width: 54px; height: 72px; border: 1px dashed var(--muted); border-radius: 4px; display: grid; place-items: center; overflow: hidden; font-size: 11px; color: var(--muted); text-align: center; cursor: pointer; background: var(--bg); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.img-fields { display: grid; gap: 6px; min-width: 0; }
+.img-fields .row > label { flex-basis: 70px; }
+
+.preview { display: grid; gap: 12px; min-width: 0; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
+.desk { background: var(--desk); border-radius: 10px; padding: 20px; overflow-x: auto; }
+.pages { display: flex; flex-direction: column; align-items: center; gap: 20px; width: max-content; margin: 0 auto; }
+@media (max-width: 640px) { .pages { zoom: 0.62; } }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ---------- the printed journal page ---------- */
+.page {
+  position: relative; background-color: #fdfdfb; color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,.15), 0 6px 18px rgba(20,24,40,.15);
+  font-family: var(--font-hand);
+}
+.page.dots {
+  background-image: radial-gradient(circle, #a9adb5 0.22mm, transparent 0.3mm);
+  background-size: 5mm 5mm; background-position: -2.5mm -2.5mm;
+}
+.page.cut { outline: 0.25mm dashed #9aa0ad; outline-offset: -0.15mm; }
+.content { position: absolute; overflow: hidden; }
+.blk { margin: 0 0 3.2mm; font-size: 4.5mm; line-height: 6.2mm; }
+.blk::after { content: ""; display: block; clear: both; }
+.blk p { margin: 0; }
+.blk .arrow { padding-left: 9mm; text-indent: -9mm; }
+.blk .arrow::before { content: "\27F6"; display: inline-block; width: 9mm; text-indent: 0; }
+.tag { margin: 1.5mm 0 4.5mm; }
+.tag span {
+  position: relative; display: inline-block; font-size: 5.2mm; line-height: 1;
+  padding: 1.6mm 4mm; color: #16161a; letter-spacing: 0.04em; z-index: 0;
+}
+.tag span::before {
+  content: ""; position: absolute; inset: 0; background: var(--tag); z-index: -1;
+  filter: url(#marker); opacity: 0.92;
+}
+.fig { width: var(--w); margin: 0.8mm 0 2mm; }
+.fig.right { float: right; margin-left: 4mm; }
+.fig.left { float: left; margin-right: 4mm; }
+.fig img { display: block; width: 100%; }
+.fig .ph {
+  border: 0.35mm solid var(--ink); display: grid; place-items: center; text-align: center;
+  padding: 2mm; font-size: 4.4mm; line-height: 1.15; aspect-ratio: var(--ar);
+}
+
+@media print {
+  @page { margin: 8mm; }
+  body { background: #fff; padding: 0; }
+  .top, .controls, .stats, .hint { display: none !important; }
+  .wrap, .layout { display: block; max-width: none; }
+  .desk { background: none; padding: 0; overflow: visible; }
+  .pages { display: block; zoom: 1; width: auto; }
+  .page { box-shadow: none; break-after: page; margin: 0 auto; }
+  .page:last-child { break-after: auto; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="marker" x="-5%" y="-20%" width="110%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.09 0.5" numOctaves="2" seed="4"/>
+    <feDisplacementMap in="SourceGraphic" scale="7"/>
+  </filter>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Journal Catch-Up</h1>
+    <p>Paste your iPhone note and get printable journal pages: colored date tags, your paragraphs in a hand-lettered font, and spaces for book covers, movies and photos.</p>
+  </header>
+
+  <main class="layout">
+    <section class="controls" aria-label="Journal settings">
+      <div class="group">
+        <h2>From your notes</h2>
+        <label for="note" class="note">Paste the note. Day headings like <code>Monday 10/12</code> start a new entry, the paragraphs become the entry, and the habit checklist is skipped except for finished books and movies, which get a picture space.</label>
+        <textarea id="note" rows="6" placeholder="Monday 10/12&#10;- [ ] Walk 8k&#10;Woke up early and got to work…"></textarea>
+        <div class="row">
+          <label>Start after (already written) <input id="after" type="text" placeholder="10/10"></label>
+          <label>First weekday color
+            <div class="swatches" id="first-color"></div>
+          </label>
+        </div>
+        <div class="row"><button class="btn primary" id="build" type="button">Build pages</button></div>
+        <p class="note" id="build-msg" hidden></p>
+      </div>
+
+      <div class="group">
+        <h2>Tag colors</h2>
+        <p class="note">Weekdays go through these four in order and start over. Saturday and Sunday are combined into one entry with the weekend color.</p>
+        <div class="swatches">
+          <input type="color" id="rot-0" aria-label="Weekday color 1">
+          <input type="color" id="rot-1" aria-label="Weekday color 2">
+          <input type="color" id="rot-2" aria-label="Weekday color 3">
+          <input type="color" id="rot-3" aria-label="Weekday color 4">
+          <span class="note" style="margin-left:8px">Weekend</span>
+          <input type="color" id="weekend" aria-label="Weekend color">
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Entries</h2>
+        <div id="entries" style="display:grid;gap:8px"></div>
+        <div class="actions"><button class="btn small" id="add-entry" type="button">Add entry</button></div>
+        <p class="note">In the text, a blank line starts a new paragraph and a line starting with <code>-&gt;</code> becomes an arrow line, like in your notebook.</p>
+      </div>
+
+      <div class="group">
+        <h2>Page</h2>
+        <div class="row">
+          <label>Width (mm) <input id="pw" type="number" min="80" max="200" step="5"></label>
+          <label>Height (mm) <input id="ph" type="number" min="100" max="270" step="5"></label>
+          <label>Ink <input type="color" id="ink"></label>
+        </div>
+        <div class="checks">
+          <label><input id="dots" type="checkbox"> Dot grid</label>
+          <label><input id="cut" type="checkbox"> Dashed cut line</label>
+        </div>
+        <p class="note">The dots are 5&nbsp;mm apart. Print at 100% scale.</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="print" type="button">Print pages</button>
+      </div>
+      <p class="hint" id="frame-hint" hidden>Printing is turned off in this preview. To print, download <code>journal-pages.html</code> from your Journal- repo and open it in Chrome, Safari or Edge.</p>
+    </section>
+
+    <section class="preview" aria-label="Page preview">
+      <div class="stats" id="stats"></div>
+      <div class="desk"><div class="pages" id="pages"></div></div>
+      <p class="hint">Tap a picture space in the entry list to add your photo. Spaces left empty print as an outlined box with the title, like the one you drew for Best of the Best.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const DAY_LETTER = ["Su", "M", "T", "W", "Th", "F", "S"];
+  const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+  // ---------- state ----------
+  const KEY = "journal-pages-v1";
+  const defaults = () => ({
+    rotation: ["#e8697f", "#3fbca4", "#f59a55", "#b25bd6"],
+    weekend: "#f2cf4a",
+    firstColor: 0,
+    after: "",
+    ink: "#1f2a5c",
+    pw: 135, ph: 200, dots: true, cut: true,
+    example: true,
+    entries: [{
+      id: uid(), tag: "10 - 5 - M", color: "#e8697f",
+      text: "Example entry. Paste your note above and press Build pages to replace it.\n\nMet with the team about the new layout. A couple of compromises but we got on the same page at the end.\n-> Agreed on the plan for storage\n-> Follow up next week",
+      images: [{ id: uid(), caption: "Book cover", kind: "book", para: 2, side: "right", w: 6 }],
+    }],
+  });
+  let st = defaults();
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && Array.isArray(saved.entries)) st = Object.assign(st, saved);
+  } catch (e) { /* storage unavailable */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+
+  // Photos live in IndexedDB (too big for localStorage); kept in memory either way.
+  const photos = new Map();
+  let db = null;
+  try {
+    const req = indexedDB.open("journal-pages", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("photos");
+    req.onsuccess = () => {
+      db = req.result;
+      try {
+        const tx = db.transaction("photos").objectStore("photos").openCursor();
+        tx.onsuccess = e => {
+          const cur = e.target.result;
+          if (cur) { photos.set(cur.key, cur.value); cur.continue(); } else { buildEntries(); render(); }
+        };
+      } catch (e) {}
+    };
+  } catch (e) {}
+  function putPhoto(id, url) {
+    photos.set(id, url);
+    try { db && db.transaction("photos", "readwrite").objectStore("photos").put(url, id); } catch (e) {}
+  }
+
+  // ---------- note parsing ----------
+  function nextWeekday(prev, dow) {
+    const d = new Date(prev); d.setDate(d.getDate() + 1);
+    while (d.getDay() !== dow) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  const DAY_RE = /^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?\b\s*(.*)$/i;
+  function headerDate(line, prev) {
+    const m = line.match(DAY_RE);
+    if (!m || line.length > 32) return null;
+    const dow = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(m[1].toLowerCase());
+    const rest = m[2];
+    const year = new Date().getFullYear();
+    let d = null, x;
+    if ((x = rest.match(/(\d{1,2})\s*\/\s*(\d{1,2})/))) d = new Date(year, +x[1] - 1, +x[2]);
+    else if ((x = rest.match(/([a-z]{3})[a-z]*\.?\s+(\d{1,2})/i)) && MONTHS.includes(x[1].toLowerCase())) d = new Date(year, MONTHS.indexOf(x[1].toLowerCase()), +x[2]);
+    else if (rest.trim() && !/^[?!.]*$/.test(rest.trim())) return null; // a sentence that starts with a weekday
+    else if (prev) d = nextWeekday(prev, dow);
+    else return null;
+    return d;
+  }
+  const titleCase = s => s.trim().replace(/\b([a-z])/g, c => c.toUpperCase());
+
+  function parseNote(text) {
+    const days = [];
+    let cur = null, prev = null;
+    for (const raw of text.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      const d = headerDate(line, prev);
+      if (d) { prev = d; cur = { date: d, paras: [], images: [] }; days.push(cur); continue; }
+      if (!cur) continue;
+      const check = line.match(/^[-*•]\s*\[[^\]]?\]\s*(.+)$/);
+      if (check) {
+        const item = check[1];
+        let x;
+        if (/finish/i.test(item) && /book/i.test(item)) {
+          x = item.match(/book\s*[-–:]\s*(.+)$/i);
+          cur.images.push({ kind: "book", caption: x ? titleCase(x[1]) : "Book cover" });
+        } else if (/movie|film/i.test(item)) {
+          x = item.match(/(?:movie|film)\s*[-–:]\s*(.+)$/i);
+          cur.images.push({ kind: "movie", caption: x ? titleCase(x[1]) : "Movie" });
+        }
+        continue;
+      }
+      if (/^\(?\s*include\b.*(photo|pic|image)/i.test(line)) {
+        cur.images.push({ kind: "photo", caption: "Photos", para: Math.max(1, cur.paras.length) });
+        continue;
+      }
+      const sub = line.match(/^(?:[-*•]|->|→)\s*(.+)$/);
+      if (sub && cur.paras.length) { cur.paras[cur.paras.length - 1] += "\n-> " + sub[1]; continue; }
+      cur.paras.push(line);
+    }
+    return days;
+  }
+
+  function parseAfter(s) {
+    const x = (s || "").match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+    return x ? new Date(new Date().getFullYear(), +x[1] - 1, +x[2]) : null;
+  }
+
+  function buildFromNote() {
+    const days = parseNote($("note").value);
+    const after = parseAfter(st.after);
+    const list = days.filter(d => !after || d.date > after);
+    const entries = [];
+    let rot = st.firstColor, i = 0;
+    while (i < list.length) {
+      const day = list[i], dow = day.date.getDay();
+      const md = `${day.date.getMonth() + 1} - ${day.date.getDate()}`;
+      let group = [day], tag, color;
+      if (dow === 6 || dow === 0) {
+        const nx = list[i + 1];
+        if (dow === 6 && nx && nx.date.getDay() === 0 && (nx.date - day.date) < 2 * 864e5) group.push(nx);
+        tag = group.length > 1 ? `${md}/${group[1].date.getDate()} - S/Su` : `${md} - ${DAY_LETTER[dow]}`;
+        color = st.weekend;
+      } else {
+        tag = `${md} - ${DAY_LETTER[dow]}`;
+        color = st.rotation[rot % 4];
+        rot++; // every weekday in the note moves the rotation, like the to-do notebook
+      }
+      i += group.length;
+      const paras = [], images = [];
+      for (const g of group) {
+        const base = paras.length;
+        paras.push(...g.paras);
+        for (const im of g.images) {
+          let para = im.para ? base + im.para : 0;
+          if (!para) {
+            const re = im.kind === "book" ? /book/i : /movie|watch|film/i;
+            const hit = g.paras.findIndex(p => re.test(p));
+            para = base + (hit >= 0 ? hit + 1 : Math.max(1, g.paras.length));
+          }
+          images.push({ id: uid(), caption: im.caption, kind: im.kind, para: Math.max(1, para), side: im.kind === "book" ? "left" : "right", w: im.kind === "photo" ? 8 : 6 });
+        }
+      }
+      if (!paras.length && !images.length) continue;
+      entries.push({ id: uid(), tag, color, text: paras.join("\n\n"), images });
+    }
+    return { entries, days: days.length, kept: list.length };
+  }
+
+  // ---------- editor ----------
+  function swatchRow() {
+    const box = $("first-color");
+    box.innerHTML = "";
+    st.rotation.forEach((c, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "swatch"; b.style.background = c;
+      b.setAttribute("aria-label", `Start with color ${i + 1}`);
+      b.setAttribute("aria-pressed", String(st.firstColor === i));
+      b.onclick = () => { st.firstColor = i; swatchRow(); save(); };
+      box.appendChild(b);
+    });
+  }
+
+  function buildEntries() {
+    const box = $("entries");
+    const open = new Set([...box.querySelectorAll("details[open]")].map(d => d.dataset.id));
+    box.innerHTML = "";
+    st.entries.forEach((en, ei) => {
+      const d = document.createElement("details");
+      d.className = "entry"; d.dataset.id = en.id;
+      if (open.has(en.id)) d.open = true;
+      const first = (en.text.split(/\n/)[0] || "").slice(0, 80);
+      d.innerHTML = `<summary><span class="chip" style="background:${en.color}">${esc(en.tag)}</span><span class="sub">${esc(first)}</span></summary>
+        <div class="entry-body">
+          <div class="row">
+            <label>Date tag <input type="text" id="tag-${en.id}" value="${esc(en.tag)}"></label>
+            <label style="flex:0 0 auto">Color <input type="color" id="col-${en.id}" value="${en.color}"></label>
+          </div>
+          <label class="note" for="txt-${en.id}">Text</label>
+          <textarea id="txt-${en.id}" rows="8">${esc(en.text)}</textarea>
+          <div id="imgs-${en.id}" style="display:grid;gap:8px"></div>
+          <div class="actions">
+            <button class="btn small" type="button" id="addimg-${en.id}">Add picture space</button>
+            <button class="btn small" type="button" id="del-${en.id}">Remove entry</button>
+          </div>
+        </div>`;
+      box.appendChild(d);
+      $("tag-" + en.id).oninput = e => { en.tag = e.target.value; d.querySelector(".chip").textContent = en.tag; schedule(); };
+      $("col-" + en.id).oninput = e => { en.color = e.target.value; d.querySelector(".chip").style.background = en.color; schedule(); };
+      $("txt-" + en.id).oninput = e => { en.text = e.target.value; schedule(); };
+      $("addimg-" + en.id).onclick = () => { en.images.push({ id: uid(), caption: "Photo", kind: "photo", para: 1, side: "right", w: 6 }); buildEntries(); render(); };
+      $("del-" + en.id).onclick = () => { st.entries.splice(ei, 1); buildEntries(); render(); };
+      const ib = $("imgs-" + en.id);
+      en.images.forEach((im, ii) => {
+        const r = document.createElement("div");
+        r.className = "img-row";
+        const src = photos.get(im.id);
+        r.innerHTML = `<label class="thumb" title="Choose a picture">${src ? `<img src="${src}" alt="">` : "Add<br>photo"}<input type="file" accept="image/*" hidden id="file-${im.id}"></label>
+          <div class="img-fields">
+            <input type="text" id="cap-${im.id}" value="${esc(im.caption)}" aria-label="Title shown in the empty box">
+            <div class="row">
+              <label>Paragraph <input type="number" min="1" id="para-${im.id}" value="${im.para}"></label>
+              <label>Side <select id="side-${im.id}"><option value="left">Left</option><option value="right">Right</option></select></label>
+              <label>Width <select id="w-${im.id}">${[4, 5, 6, 7, 8, 10, 12].map(n => `<option value="${n}">${n} squares</option>`).join("")}</select></label>
+            </div>
+            <div class="actions">
+              ${src ? `<button class="btn small" type="button" id="clr-${im.id}">Remove photo</button>` : ""}
+              <button class="btn small" type="button" id="rm-${im.id}">Remove space</button>
+            </div>
+          </div>`;
+        ib.appendChild(r);
+        $("side-" + im.id).value = im.side; $("w-" + im.id).value = im.w;
+        $("cap-" + im.id).oninput = e => { im.caption = e.target.value; schedule(); };
+        $("para-" + im.id).oninput = e => { im.para = Math.max(1, +e.target.value || 1); schedule(); };
+        $("side-" + im.id).onchange = e => { im.side = e.target.value; schedule(); };
+        $("w-" + im.id).onchange = e => { im.w = +e.target.value; schedule(); };
+        $("rm-" + im.id).onclick = () => { en.images.splice(ii, 1); buildEntries(); render(); };
+        if (src) $("clr-" + im.id).onclick = () => { photos.delete(im.id); try { db && db.transaction("photos", "readwrite").objectStore("photos").delete(im.id); } catch (e) {} buildEntries(); render(); };
+        $("file-" + im.id).onchange = e => loadPhoto(e.target.files[0], im.id);
+      });
+    });
+  }
+
+  function loadPhoto(file, id) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // shrink big phone photos so pages stay quick
+        const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        putPhoto(id, cv.toDataURL("image/jpeg", 0.88));
+        buildEntries(); render();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---------- pages ----------
+  const MARGIN_X = 10, MARGIN_Y = 10; // mm, two squares in from the edge
+
+  function figHtml(im) {
+    const src = photos.get(im.id);
+    const ar = im.kind === "photo" ? "4 / 3" : "2 / 3";
+    const inner = src ? `<img src="${src}" alt="${esc(im.caption)}">` : `<div class="ph" style="--ar:${ar}">${esc(im.caption)}</div>`;
+    return `<div class="fig ${im.side}" style="--w:${im.w * 5}mm">${inner}</div>`;
+  }
+
+  function paraHtml(text) {
+    return text.split("\n").map(l => {
+      const a = l.match(/^\s*(?:->|→)\s*(.*)$/);
+      return a ? `<p class="arrow">${esc(a[1])}</p>` : `<p>${esc(l)}</p>`;
+    }).join("");
+  }
+
+  function entryBlocks(en) {
+    const blocks = [];
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    tag.innerHTML = `<span style="--tag:${en.color}">${esc(en.tag)}</span>`;
+    blocks.push(tag);
+    const paras = en.text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+    const n = Math.max(1, paras.length);
+    for (let i = 0; i < n; i++) {
+      const figs = en.images.filter(im => Math.min(im.para, n) === i + 1).map(figHtml).join("");
+      if (!paras[i] && !figs) continue;
+      const b = document.createElement("div");
+      b.className = "blk";
+      b.innerHTML = figs + paraHtml(paras[i] || "");
+      blocks.push(b);
+    }
+    return blocks;
+  }
+
+  function newPage(host) {
+    const pg = document.createElement("div");
+    pg.className = "page" + (st.dots ? " dots" : "") + (st.cut ? " cut" : "");
+    pg.style.width = st.pw + "mm"; pg.style.height = st.ph + "mm";
+    pg.style.setProperty("--ink", st.ink);
+    const c = document.createElement("div");
+    c.className = "content";
+    c.style.left = MARGIN_X + "mm"; c.style.top = MARGIN_Y + "mm";
+    c.style.width = (st.pw - 2 * MARGIN_X) + "mm"; c.style.height = (st.ph - 2 * MARGIN_Y) + "mm";
+    pg.appendChild(c);
+    host.appendChild(pg);
+    return c;
+  }
+  const overflows = c => c.scrollHeight > c.clientHeight + 1;
+
+  function render() {
+    const host = $("pages");
+    host.innerHTML = "";
+    let c = newPage(host), count = 1;
+    for (const en of st.entries) {
+      const blocks = entryBlocks(en);
+      blocks.forEach((b, i) => {
+        c.appendChild(b);
+        if (!overflows(c)) return;
+        c.removeChild(b);
+        // never leave a date tag alone at the bottom of a page
+        const carry = i === 1 && c.lastChild && c.lastChild.classList.contains("tag") ? c.lastChild : null;
+        if (carry) c.removeChild(carry);
+        if (!c.children.length && !carry) { c.appendChild(b); return; } // too tall for any page: keep it
+        c = newPage(host); count++;
+        if (carry) c.appendChild(carry);
+        c.appendChild(b);
+      });
+    }
+    $("stats").innerHTML = `<span class="stat">${st.entries.length} ${st.entries.length === 1 ? "entry" : "entries"}</span><span class="stat">${count} ${count === 1 ? "page" : "pages"}</span><span class="stat">Each page ${st.pw} × ${st.ph} mm</span>`;
+    save();
+  }
+  let timer = 0;
+  function schedule() { clearTimeout(timer); timer = setTimeout(render, 120); }
+
+  // ---------- wiring ----------
+  function syncInputs() {
+    st.rotation.forEach((c, i) => { $("rot-" + i).value = c; });
+    $("weekend").value = st.weekend;
+    $("after").value = st.after;
+    $("pw").value = st.pw; $("ph").value = st.ph; $("ink").value = st.ink;
+    $("dots").checked = st.dots; $("cut").checked = st.cut;
+  }
+  for (let i = 0; i < 4; i++) $("rot-" + i).oninput = e => { st.rotation[i] = e.target.value; swatchRow(); save(); };
+  $("weekend").oninput = e => { st.weekend = e.target.value; save(); };
+  $("after").oninput = e => { st.after = e.target.value; save(); };
+  $("ink").oninput = e => { st.ink = e.target.value; schedule(); };
+  $("pw").oninput = e => { const v = +e.target.value; if (v >= 80 && v <= 200) { st.pw = v; schedule(); } };
+  $("ph").oninput = e => { const v = +e.target.value; if (v >= 100 && v <= 270) { st.ph = v; schedule(); } };
+  $("dots").onchange = e => { st.dots = e.target.checked; render(); };
+  $("cut").onchange = e => { st.cut = e.target.checked; render(); };
+  $("add-entry").onclick = () => { st.entries.push({ id: uid(), tag: "Date", color: st.rotation[0], text: "", images: [] }); buildEntries(); render(); };
+  $("build").onclick = () => {
+    const r = buildFromNote();
+    const msg = $("build-msg");
+    msg.hidden = false;
+    if (!r.days) { msg.textContent = "No day headings found. Each day should start on its own line, like \"Monday 10/12\"."; return; }
+    if (!r.entries.length) { msg.textContent = `Found ${r.days} days, but none after ${st.after} have paragraphs to print.`; return; }
+    st.entries = r.entries; st.example = false;
+    const skipped = r.kept - r.entries.reduce((n, e) => n + (/S\/Su/.test(e.tag) ? 2 : 1), 0);
+    msg.textContent = `Made ${r.entries.length} entries from ${r.kept} days${st.after ? " after " + st.after : ""}.` + (skipped > 0 ? ` ${skipped} day${skipped > 1 ? "s" : ""} had no paragraphs and were left out.` : "");
+    buildEntries(); render();
+  };
+  $("print").onclick = () => window.print();
+  let framed = true;
+  try { framed = window.self !== window.top; } catch (e) {}
+  if (framed) { $("print").hidden = true; $("frame-hint").hidden = false; }
+
+  syncInputs(); swatchRow(); buildEntries(); render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+})();
+</script>
