@@ -126,6 +126,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .fig.right { float: right; margin-left: 4mm; }
 .fig.left { float: left; margin-right: 4mm; }
 .fig img { display: block; width: 100%; }
+.figrow { clear: both; display: flex; justify-content: center; gap: 4mm; padding-top: 2.5mm; }
+.figrow .fig { margin: 0; flex: 0 0 var(--w); }
+.figrow .fig .ph { width: 100%; }
 .fig .ph {
   border: 0.35mm solid var(--ink); display: grid; place-items: center; text-align: center;
   padding: 2mm; font-size: 4.4mm; line-height: 1.15; aspect-ratio: var(--ar);
@@ -295,7 +298,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     else return null;
     return d;
   }
-  const titleCase = s => s.trim().replace(/\b([a-z])/g, c => c.toUpperCase());
+  const SMALL = new Set(["a", "an", "and", "by", "for", "in", "of", "on", "the", "to"]);
+  const titleCase = s => s.trim().split(/\s+/).map((w, i) => i && SMALL.has(w.toLowerCase()) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  // "(Include 3 photos total of the pumpkin patch)" -> 3 photo spaces captioned "Pumpkin patch"
+  function addPhotos(day, what, para) {
+    const nums = (what.match(/\b\d\b/g) || []).map(Number).filter(n => n > 0 && n <= 6);
+    const caption = what.replace(/\b\d\b(\s*-\s*\d\b)?/g, "")
+      .replace(/\b(photos?|pictures?|pics?|images?|total|here|of|the|some)\b/gi, "")
+      .replace(/[,()]/g, "").replace(/\s+/g, " ").trim();
+    day.images.push({ kind: "photo", caption: caption ? caption.charAt(0).toUpperCase() + caption.slice(1) : "Photo", para: Math.max(1, para), count: nums.length ? Math.max(...nums) : 1 });
+  }
 
   function parseNote(text) {
     const days = [];
@@ -319,13 +332,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         }
         continue;
       }
-      if (/^\(?\s*include\b.*(photo|pic|image)/i.test(line)) {
-        cur.images.push({ kind: "photo", caption: "Photos", para: Math.max(1, cur.paras.length) });
-        continue;
-      }
+      const inc = line.match(/^\(\s*(?:include|insert)\b([^)]*)\)?\s*$/i);
+      if (inc) { addPhotos(cur, inc[1], cur.paras.length); continue; }
       const sub = line.match(/^(?:[-*•]|->|→)\s*(.+)$/);
       if (sub && cur.paras.length) { cur.paras[cur.paras.length - 1] += "\n-> " + sub[1]; continue; }
-      cur.paras.push(line);
+      // a photo note inside a sentence, like "bagels at Bagel Joes (insert photo here)"
+      const text = line.replace(/\s*\(\s*(?:include|insert)\b([^)]*)\)/gi, (m, what) => { addPhotos(cur, what, cur.paras.length + 1); return ""; });
+      cur.paras.push(text.trim());
     }
     return days;
   }
@@ -367,8 +380,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             const hit = g.paras.findIndex(p => re.test(p));
             para = base + (hit >= 0 ? hit + 1 : Math.max(1, g.paras.length));
           }
-          images.push({ id: uid(), caption: im.caption, kind: im.kind, para: Math.max(1, para), side: im.kind === "book" ? "left" : "right", w: im.kind === "photo" ? 8 : 6 });
+          const n = im.count || 1;
+          for (let k = 0; k < n; k++) {
+            // several photos sit in a row under the paragraph; one floats beside it
+            images.push({ id: uid(), caption: im.caption, kind: im.kind, para: Math.max(1, para),
+              side: n > 1 ? "row" : im.kind === "book" ? "left" : "right", w: n > 1 ? (n === 2 ? 11 : n === 3 ? 7 : 5) : im.kind === "photo" ? 7 : 6 });
+          }
         }
+      }
+      // two pictures beside the same paragraph go on opposite sides
+      const taken = new Set();
+      for (const im of images) {
+        if (im.side === "row") continue;
+        if (taken.has(im.para + im.side)) im.side = im.side === "left" ? "right" : "left";
+        taken.add(im.para + im.side);
       }
       if (!paras.length && !images.length) continue;
       entries.push({ id: uid(), tag, color, text: paras.join("\n\n"), images });
@@ -429,7 +454,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             <input type="text" id="cap-${im.id}" value="${esc(im.caption)}" aria-label="Title shown in the empty box">
             <div class="row">
               <label>Paragraph <input type="number" min="1" id="para-${im.id}" value="${im.para}"></label>
-              <label>Side <select id="side-${im.id}"><option value="left">Left</option><option value="right">Right</option></select></label>
+              <label>Side <select id="side-${im.id}"><option value="left">Left</option><option value="right">Right</option><option value="row">Row below</option></select></label>
               <label>Width <select id="w-${im.id}">${[4, 5, 6, 7, 8, 10, 12].map(n => `<option value="${n}">${n} squares</option>`).join("")}</select></label>
             </div>
             <div class="actions">
@@ -495,14 +520,35 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     const paras = en.text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     const n = Math.max(1, paras.length);
     for (let i = 0; i < n; i++) {
-      const figs = en.images.filter(im => Math.min(im.para, n) === i + 1).map(figHtml).join("");
-      if (!paras[i] && !figs) continue;
-      const b = document.createElement("div");
-      b.className = "blk";
-      b.innerHTML = figs + paraHtml(paras[i] || "");
-      blocks.push(b);
+      const here = en.images.filter(im => Math.min(im.para, n) === i + 1);
+      if (!paras[i] && !here.length) continue;
+      const floats = here.filter(im => im.side !== "row").map(figHtml).join("");
+      const row = here.filter(im => im.side === "row").map(figHtml).join("");
+      const text = paras[i] || "";
+      if (text || floats) {
+        const b = document.createElement("div");
+        b.className = "blk";
+        b.innerHTML = floats + paraHtml(text);
+        // a plain paragraph may continue on the next page
+        if (!floats && !text.includes("\n")) b.dataset.text = text;
+        blocks.push(b);
+      }
+      if (row) {
+        const r = document.createElement("div");
+        r.className = "blk";
+        r.innerHTML = `<div class="figrow">${row}</div>`;
+        blocks.push(r);
+      }
     }
     return blocks;
+  }
+
+  function textBlock(text) {
+    const b = document.createElement("div");
+    b.className = "blk";
+    b.innerHTML = paraHtml(text);
+    b.dataset.text = text;
+    return b;
   }
 
   function newPage(host) {
@@ -530,6 +576,28 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         c.appendChild(b);
         if (!overflows(c)) return;
         c.removeChild(b);
+        const afterTag = i === 1 && c.lastChild && c.lastChild.classList.contains("tag");
+        if (b.dataset.text && c.children.length && !afterTag) {
+          // fit as many words as possible here and carry the rest over
+          const words = b.dataset.text.split(" ");
+          let lo = 0, hi = words.length - 1;
+          while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2);
+            const probe = textBlock(words.slice(0, mid).join(" "));
+            c.appendChild(probe);
+            const ok = !overflows(c);
+            c.removeChild(probe);
+            if (ok) lo = mid; else hi = mid - 1;
+          }
+          if (lo >= 6 && words.length - lo >= 3) {
+            const head = textBlock(words.slice(0, lo).join(" "));
+            head.style.marginBottom = "0";
+            c.appendChild(head);
+            c = newPage(host); count++;
+            c.appendChild(textBlock(words.slice(lo).join(" ")));
+            return;
+          }
+        }
         // never leave a date tag alone at the bottom of a page
         const carry = i === 1 && c.lastChild && c.lastChild.classList.contains("tag") ? c.lastChild : null;
         if (carry) c.removeChild(carry);
