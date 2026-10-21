@@ -19,4 +19,4 @@ Use **Shuffle layout** for a different arrangement, or **Outlines only** to prin
 1. Paste the note, enter the last day already written in **Start after** (for example `10/10`), pick the color the next weekday should get, and press **Build pages**.
 2. Weekdays cycle through the four tag colors; Saturday and Sunday are combined into one entry with the weekend color.
 3. Finished books, movies and "(Include some photos)" lines get picture spaces. Tap one to add your photo, or leave it empty to print an outlined box with the title.
-4. Print at 100% scale and cut along the dashed line.
+4. Pages are 120 × 175 mm (the habit board size) and print two per landscape letter sheet. Print at 100% scale and cut along the dashed lines.
