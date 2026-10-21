@@ -466,7 +466,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         const color = st.outline ? "#2a2a30" : shade(h.color, light ? 0.35 : 0.12);
         const tx = right ? px - c * 0.4 : px + pw * c + c * 0.4;
         lines.forEach((ln, k) => {
-          s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="${right ? "end" : "start"}" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}">${esc(ln)}</text>`;
+          s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="${right ? "end" : "start"}" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}" stroke="${color}" stroke-width="${f(fontSize * 0.07)}" stroke-linejoin="round">${esc(ln)}</text>`;
         });
         row += pieceH[i] + gapRows;
       });
