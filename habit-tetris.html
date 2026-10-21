@@ -397,15 +397,25 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       `<path d="${d}" fill="none" stroke="#1d1d22" stroke-width="${f(c * 0.13)}" stroke-linejoin="round"/>`;
   }
 
-  function wrapLabel(text, max) {
-    const words = text.trim().split(/\s+/);
+  // Width of a label line in mm, measured with the real font (falls back to an estimate).
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  function textWidth(text, size) {
+    if (!measureCtx) return text.length * size * 0.47;
+    measureCtx.font = `100px 'Patrick Hand SC', 'Comic Sans MS', cursive`;
+    return measureCtx.measureText(text).width / 100 * size * 1.04;
+  }
+
+  // Fill each line before wrapping; a "|" in the name forces a line break.
+  function wrapLabel(text, width, size) {
     const lines = [];
-    let cur = "";
-    for (const w of words) {
-      if (cur && (cur + " " + w).length > max) { lines.push(cur); cur = w; }
-      else cur = cur ? cur + " " + w : w;
+    for (const part of text.split("|")) {
+      let cur = "";
+      for (const w of part.trim().split(/\s+/).filter(Boolean)) {
+        if (cur && textWidth(cur + " " + w, size) > width) { lines.push(cur); cur = w; }
+        else cur = cur ? cur + " " + w : w;
+      }
+      if (cur) lines.push(cur);
     }
-    if (cur) lines.push(cur);
     return lines.slice(0, 3);
   }
 
@@ -458,15 +468,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         const right = i % 2 === 0;
         const px = lx + (right ? (keyCols - 1 - pw) * c : 0);
         s += pieceSvg(p.cells, px, y, c, h.color, st.outline);
-        const room = right ? px - c * 0.6 : (keyCols - 1) * c - (pw * c + c * 0.4);
-        const lines = wrapLabel(h.name || "", Math.max(5, Math.floor(room / (fontSize * 0.47))));
+        // The label is centered in the key space beside its piece.
+        const x0 = right ? lx : px + pw * c + c * 0.4, x1 = right ? px - c * 0.4 : bx - c * 0.4;
+        const lines = wrapLabel(h.name || "", x1 - x0, fontSize);
         const cy = y + pieceH[i] * c / 2 - (lines.length - 1) * fontSize * 0.55;
         const n = parseInt(h.color.slice(1), 16);
         const light = (0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255)) / 255 > 0.6;
         const color = st.outline ? "#2a2a30" : shade(h.color, light ? 0.35 : 0.12);
-        const tx = right ? px - c * 0.4 : px + pw * c + c * 0.4;
+        const tx = (x0 + x1) / 2;
         lines.forEach((ln, k) => {
-          s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="${right ? "end" : "start"}" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}" stroke="${color}" stroke-width="${f(fontSize * 0.07)}" stroke-linejoin="round">${esc(ln)}</text>`;
+          s += `<text x="${f(tx)}" y="${f(cy + k * fontSize * 1.1 + fontSize * 0.35)}" text-anchor="middle" font-family="'Patrick Hand SC', 'Comic Sans MS', cursive" font-size="${f(fontSize)}" fill="${color}" stroke="${color}" stroke-width="${f(fontSize * 0.07)}" stroke-linejoin="round">${esc(ln)}</text>`;
         });
         row += pieceH[i] + gapRows;
       });
@@ -520,7 +531,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       const row = document.createElement("div");
       row.className = "habit";
       row.innerHTML = `<span id="icon-${i}">${miniPiece(i, h.color)}</span>
-        <input type="text" id="name-${i}" aria-label="Habit for the ${PIECES[i].key} piece" value="${esc(h.name)}">
+        <input type="text" id="name-${i}" title="Type | to start a new line in the key" aria-label="Habit for the ${PIECES[i].key} piece" value="${esc(h.name)}">
         <input type="color" id="color-${i}" aria-label="Color for ${esc(h.name)}" value="${h.color}">
         <div class="stepper">
           <button type="button" id="minus-${i}" aria-label="One fewer">−</button>
