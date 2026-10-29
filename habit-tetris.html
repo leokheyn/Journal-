@@ -601,7 +601,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       if (!line) continue;
       const mi = MONTHS.findIndex(m => m.toLowerCase() === line.toLowerCase());
       if (mi >= 0) { month = mi; continue; }
-      if (/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/i.test(line)) { days++; day = line; continue; }
+      // a day heading is short ("Monday 10/19"), unlike a sentence that starts with a weekday
+      if (line.length <= 32 && /^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/i.test(line)) { days++; day = line; continue; }
       const m = line.match(/^[-*•]\s*\[[^\]]?\]\s*(.+)$/);
       if (!m) continue;
       const item = m[1].trim(), idx = habitFor(item);
