@@ -470,7 +470,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             <div class="row">
               <label>Paragraph <input type="number" min="1" id="para-${im.id}" value="${im.para}"></label>
               <label>Side <select id="side-${im.id}"><option value="left">Left</option><option value="right">Right</option><option value="row">Row below</option></select></label>
-              <label>Size <span style="display:flex;gap:4px;align-items:center"><select id="w-${im.id}" aria-label="Width in squares">${[3, 4, 5, 6, 7, 8, 10, 12].map(n => `<option value="${n}">${n}</option>`).join("")}</select>×<select id="h-${im.id}" aria-label="Height in squares">${[3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => `<option value="${n}">${n}</option>`).join("")}</select></span></label>
+              <label>Size <span style="display:flex;gap:4px;align-items:center"><select id="w-${im.id}" aria-label="Width in squares">${[3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 18, 20].map(n => `<option value="${n}">${n}</option>`).join("")}</select>×<select id="h-${im.id}" aria-label="Height in squares">${[3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => `<option value="${n}">${n}</option>`).join("")}</select></span></label>
             </div>
             <label class="checks" style="font-size:13px"><input type="checkbox" id="whole-${im.id}" ${im.whole ? "checked" : ""}> Keep photo shape (no crop; height follows the photo)</label>
             <div class="actions">
