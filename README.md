@@ -12,6 +12,8 @@
 Each habit is one Tetris piece. The tool stacks all the pieces from the bottom with as few gaps as possible.
 Use **Shuffle layout** for a different arrangement, or **Outlines only** to print it blank and color it in by hand.
 
+The **Bingo board** prints as the left page beside the Tetris board, both on one landscape letter sheet. Tap squares as you finish them; **Still to do** lists the rest to carry over to next month.
+
 ## Journal Catch-Up
 
 `journal-pages.html` turns the daily paragraphs in your iPhone note into printable journal pages.

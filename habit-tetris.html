@@ -97,7 +97,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   padding: 24px;
   display: flex; justify-content: center;
 }
-#board-svg { display: block; width: 100%; max-width: 560px; height: auto; }
+#board-svg, #bingo-svg { display: block; width: 100%; max-width: 560px; height: auto; }
+.spread { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.spread .paper { padding: 16px; }
+.bingo-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.bingo-grid button {
+  font: 12px/1.15 var(--font-body); color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; min-height: 58px; padding: 4px; cursor: pointer; overflow-wrap: anywhere; min-width: 0;
+}
+.bingo-grid button[aria-pressed="true"] { background: var(--bingo); border-color: var(--bingo); color: #16161a; font-weight: 700; }
+.todo { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
 
 @media print {
@@ -106,13 +115,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   .top, .controls, .stats, .hint { display: none !important; }
   .wrap, .layout { display: block; max-width: none; }
   .paper { background: none; box-shadow: none; padding: 0; display: block; }
-  #board-svg { width: auto !important; height: auto !important; max-width: none; }
+  #board-svg, #bingo-svg { width: auto !important; height: auto !important; max-width: none; }
+  .spread { display: block; }
+  body.two-up .spread { display: flex; justify-content: center; align-items: center; gap: 12mm; width: 279mm; height: 215mm; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 </style>
 
 <div class="wrap">
   <header class="top">
+    <style id="page-style"></style>
     <svg class="logo" width="44" height="44" viewBox="0 0 4 4" aria-hidden="true">
       <rect x="0" y="2" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
       <rect x="1" y="2" width="1" height="1" fill="#e8352b" stroke="#1b1e2b" stroke-width=".08"/>
@@ -160,6 +172,34 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       </div>
 
       <div class="group">
+        <h2>Bingo board</h2>
+        <label for="bingo-items" class="note">The 24 squares, one per line. The free space goes in the middle.</label>
+        <textarea id="bingo-items" rows="8"></textarea>
+        <div class="row">
+          <label>Free space <input id="bingo-free" type="text"></label>
+          <label style="flex:0 0 auto">Color <input id="bingo-color" type="color" style="width:40px;height:34px;padding:0"></label>
+        </div>
+        <p class="note">Tap a square when you finish it.</p>
+        <div class="bingo-grid" id="bingo-grid"></div>
+        <p class="note" id="bingo-status"></p>
+        <div class="checks">
+          <label><input id="bingoOn" type="checkbox"> Print the Bingo page beside the board</label>
+          <label><input id="bingoFill" type="checkbox"> Color in finished squares</label>
+        </div>
+        <div class="actions">
+          <button class="btn" id="bingo-shuffle" type="button">Shuffle squares</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Still to do</h2>
+        <p class="note">Squares you haven't finished, ready to carry over to next month.</p>
+        <ul class="todo" id="todo"></ul>
+        <div class="actions"><button class="btn" id="copy-todo" type="button">Copy list</button></div>
+        <textarea id="todo-text" rows="4" readonly hidden aria-label="Unfinished squares"></textarea>
+      </div>
+
+      <div class="group">
         <h2>Board</h2>
         <div class="row">
           <label>Columns <input id="cols" type="number" min="6" max="20" step="1"></label>
@@ -178,7 +218,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       </div>
 
       <div class="actions">
-        <button class="btn primary" id="print" type="button">Print board</button>
+        <button class="btn primary" id="print" type="button">Print</button>
         <button class="btn" id="shuffle" type="button">Shuffle layout</button>
         <button class="btn" id="resetColors" type="button">Reset colors</button>
       </div>
@@ -187,7 +227,10 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 
     <section class="preview" aria-label="Board preview">
       <div class="stats" id="stats"></div>
-      <div class="paper" id="print-area"></div>
+      <div class="spread">
+        <div class="paper" id="bingo-area"></div>
+        <div class="paper" id="print-area"></div>
+      </div>
       <p class="hint">Pieces stack from the bottom, the same way you draw them by hand. Gaps are squares the packer couldn't fill; press Shuffle layout to try another arrangement.</p>
     </section>
   </main>
@@ -495,6 +538,90 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     return { svg: s, rows };
   }
 
+  // ---------- bingo ----------
+  const BINGO_COLORS = ["#4f7cc4","#e0457b","#3f9a5a","#7da9d9","#f48fb1","#e2673a","#d6335a","#f47a20","#c0392b","#d38324","#a0522d","#1b7f3b"];
+  const OCT_SQUARES = ["Repair AMS Lite","Ship out Film","Shutters in Front Room","Storage Solution in Garage","Record Store Trip","Yield Work for Chris","BI Checkout CapEx","3 Mil Bonding Recipe","Hang McLaren Cars","Start Phil. Book","Waterproof Sconces","Catch up Notebook","Print Workspace Hero","Update Test Floor Layout","Facilities Action Items","Buy Tema B-Day Gift","Assembly Textbooks","EPI Cans Decision","Schedule Sprinkler","Mount Furniture","Assy DB Claude App","Bike Ride","DATAQ Eval","15+ Gym Trip"];
+  const CENTER = 12;
+  // square i of the 5x5 grid: the center is the free space, the 24 items fill the rest in order
+  const squareText = (b, i) => i === CENTER ? b.free : (b.items[i < CENTER ? i : i - 1] || "");
+
+  const bingoCtx = document.createElement("canvas").getContext("2d");
+  function bingoWidth(text, size) {
+    if (!bingoCtx) return text.length * size * 0.52;
+    bingoCtx.font = `100px 'Atkinson Hyperlegible', Arial, sans-serif`;
+    return bingoCtx.measureText(text).width / 100 * size * 1.03;
+  }
+  // biggest font size whose wrapped lines fit the square
+  function fitSquare(text, w, h, max) {
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    for (let size = max; size > 1.6; size -= 0.1) {
+      if (words.some(wd => bingoWidth(wd, size) > w)) continue;
+      const lines = [];
+      let cur = "";
+      for (const wd of words) {
+        if (cur && bingoWidth(cur + " " + wd, size) > w) { lines.push(cur); cur = wd; }
+        else cur = cur ? cur + " " + wd : wd;
+      }
+      if (cur) lines.push(cur);
+      if (lines.length * size * 1.15 <= h) return { size, lines };
+    }
+    return { size: 1.6, lines: [text] };
+  }
+
+  function bingoLines(done) {
+    const lines = [];
+    for (let r = 0; r < 5; r++) lines.push([0, 1, 2, 3, 4].map(c => r * 5 + c));
+    for (let c = 0; c < 5; c++) lines.push([0, 1, 2, 3, 4].map(r => r * 5 + c));
+    lines.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
+    return lines.filter(l => l.every(i => done[i]));
+  }
+
+  // Same page size and title as the Tetris page so the two sit side by side as a spread.
+  function renderBingo(st, totalW, totalH) {
+    const c = st.cell, b = st.bingo;
+    const cols = Math.round(totalW / c), rows = Math.round(totalH / c);
+    const cw = Math.floor((cols - 2) / 5), aboveRows = st.showTitle ? 4 : 1;
+    const ch = Math.max(cw, Math.floor((rows - aboveRows - 4) / 5));
+    const gw = cw * 5 * c, gh = ch * 5 * c;
+    const gx = (totalW - gw) / 2, gy = totalH - c - gh;
+    let s = `<svg id="bingo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(totalW)} ${f(totalH)}" width="${f(totalW)}mm" height="${f(totalH)}mm" role="img" aria-label="${esc(st.title || MONTHS[st.month])} bingo board">`;
+    if (st.cut) s += `<rect x="0.15" y="0.15" width="${f(totalW - 0.3)}" height="${f(totalH - 0.3)}" fill="none" stroke="#9aa0ad" stroke-width="0.25" stroke-dasharray="2 1.5"/>`;
+    if (st.showTitle) {
+      const title = st.title || MONTHS[st.month];
+      const pal = st.habits.map(h => h.color);
+      const titleSize = Math.min(c * 2.6, (st.cols * c) / Math.max(4, title.length) * 1.25);
+      let spans = "", i = 0;
+      for (const chr of title) spans += `<tspan fill="${st.outline || chr === " " ? "#ffffff" : pal[i++ % pal.length]}">${esc(chr)}</tspan>`;
+      s += `<text x="${f(totalW / 2)}" y="${f(aboveRows * c / 2 + titleSize * 0.36)}" text-anchor="middle" font-family="Bungee, 'Arial Black', Impact, sans-serif" font-size="${f(titleSize)}" stroke="#1d1d22" stroke-width="${f(titleSize * 0.05)}" stroke-linejoin="round" paint-order="stroke">${spans}</text>`;
+    }
+    const letterSize = c * 1.7;
+    "BINGO".split("").forEach((L, i) => {
+      s += `<text x="${f(gx + (i + 0.5) * cw * c)}" y="${f(gy - c * 0.6)}" text-anchor="middle" font-family="'Atkinson Hyperlegible', Arial, sans-serif" font-size="${f(letterSize)}" fill="#16161a">${L}</text>`;
+    });
+    s += `<rect x="${f(gx)}" y="${f(gy)}" width="${f(gw)}" height="${f(gh)}" fill="#ffffff"/>`;
+    for (let i = 0; i < 25; i++) {
+      const x = gx + (i % 5) * cw * c, y = gy + Math.floor(i / 5) * ch * c, w = cw * c, h = ch * c;
+      if (st.bingoFill && b.done[i]) s += `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" fill="${b.color}" fill-opacity="0.85"/>`;
+      let text = squareText(b, i);
+      const pad = c * 0.35;
+      const fit = fitSquare(text, w - 2 * pad, h - 2 * pad - (i === CENTER ? c * 0.7 : 0), c * 1.15);
+      let ty = y + h / 2 - (fit.lines.length - 1) * fit.size * 0.575 + fit.size * 0.35;
+      if (i === CENTER) {
+        ty += c * 0.35;
+        s += `<text x="${f(x + w / 2)}" y="${f(ty - (fit.lines.length - 1) * fit.size * 0.575 - fit.size * 0.95)}" text-anchor="middle" font-family="'Atkinson Hyperlegible', Arial, sans-serif" font-size="${f(c * 0.5)}" font-weight="700" letter-spacing="0.3" fill="#16161a">FREE</text>`;
+      }
+      fit.lines.forEach((ln, k) => {
+        s += `<text x="${f(x + w / 2)}" y="${f(ty + k * fit.size * 1.15)}" text-anchor="middle" font-family="'Atkinson Hyperlegible', Arial, sans-serif" font-size="${f(fit.size)}" fill="#16161a">${esc(ln)}</text>`;
+      });
+    }
+    for (let k = 1; k < 5; k++) {
+      s += `<line x1="${f(gx + k * cw * c)}" y1="${f(gy)}" x2="${f(gx + k * cw * c)}" y2="${f(gy + gh)}" stroke="#1d1d22" stroke-width="${f(c * 0.08)}"/>`;
+      s += `<line x1="${f(gx)}" y1="${f(gy + k * ch * c)}" x2="${f(gx + gw)}" y2="${f(gy + k * ch * c)}" stroke="#1d1d22" stroke-width="${f(c * 0.08)}"/>`;
+    }
+    s += `<rect x="${f(gx)}" y="${f(gy)}" width="${f(gw)}" height="${f(gh)}" fill="none" stroke="#1d1d22" stroke-width="${f(c * 0.2)}"/>`;
+    return s + `</svg>`;
+  }
+
   // ---------- state ----------
   const KEY = "habit-tetris-v1";
   const now = new Date();
@@ -502,6 +629,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     month: now.getMonth(), title: "", cols: 16, cell: 5, rows: 30,
     blank: false, dots: true, outline: false, showTitle: true, showLegend: true, cut: true, seed: 1, example: true,
     habits: DEFAULT_NAMES.map((name, i) => ({ name, color: PALETTES[now.getMonth()][i], count: EXAMPLE_COUNTS[i] })),
+    bingoOn: true, bingoFill: true,
+    bingo: { items: OCT_SQUARES.slice(), free: "33rd B-Day", color: BINGO_COLORS[now.getMonth()], done: Array.from({ length: 25 }, (_, i) => i === CENTER) },
   });
   let st = defaults();
   try {
@@ -510,6 +639,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       // Boards saved before the fixed-rows setting keep their habits but take the new board defaults.
       if (saved.rows === undefined) { delete saved.cols; delete saved.blank; delete saved.extra; }
       st = Object.assign(st, saved);
+      if (!st.bingo || !Array.isArray(st.bingo.done)) st.bingo = defaults().bingo;
     }
   } catch (e) { /* storage unavailable: start from defaults */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
@@ -553,7 +683,32 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     $("title").value = st.title;
     $("title").placeholder = MONTHS[st.month];
     $("cols").value = st.cols; $("cell").value = st.cell; $("rows").value = st.rows;
-    for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut"]) $(k).checked = st[k];
+    for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut", "bingoOn", "bingoFill"]) $(k).checked = st[k];
+    $("bingo-items").value = st.bingo.items.join("\n");
+    $("bingo-free").value = st.bingo.free;
+    $("bingo-color").value = st.bingo.color;
+  }
+
+  function buildBingo() {
+    const b = st.bingo, grid = $("bingo-grid");
+    document.documentElement.style.setProperty("--bingo", b.color);
+    grid.innerHTML = "";
+    for (let i = 0; i < 25; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = squareText(b, i) || "\u2013";
+      btn.setAttribute("aria-pressed", String(!!b.done[i]));
+      btn.onclick = () => { b.done[i] = !b.done[i]; buildBingo(); schedule(); };
+      grid.appendChild(btn);
+    }
+    const filled = b.items.filter(t => t.trim()).length;
+    const doneCount = b.done.filter(Boolean).length, lines = bingoLines(b.done).length;
+    $("bingo-status").textContent = `${doneCount} of 25 done · ${lines ? lines + (lines === 1 ? " bingo" : " bingos") : "no bingo yet"}` +
+      (filled !== 24 ? ` · ${filled} of 24 squares filled in` : "");
+    const todo = [];
+    for (let i = 0; i < 25; i++) if (!b.done[i] && squareText(b, i).trim()) todo.push(squareText(b, i));
+    $("todo").innerHTML = todo.length ? todo.map(t => `<li>${esc(t)}</li>`).join("") : "<li>Everything is done.</li>";
+    $("todo-text").value = todo.join("\n");
   }
 
   function applyPalette() {
@@ -574,6 +729,11 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     $("print-area").innerHTML = out.svg;
     const svg = $("board-svg");
     const mmW = parseFloat(svg.getAttribute("width")), mmH = parseFloat(svg.getAttribute("height"));
+    $("bingo-area").hidden = !st.bingoOn;
+    $("bingo-area").innerHTML = st.bingoOn ? renderBingo(st, mmW, mmH) : "";
+    const twoUp = st.bingoOn && mmW * 2 + 12 <= 279 && mmH <= 215;
+    document.body.classList.toggle("two-up", twoUp);
+    $("page-style").textContent = twoUp ? "@media print { @page { size: letter landscape; margin: 0; } }" : "";
     $("stats").innerHTML =
       `<span class="chip">${st.cols} × ${out.rows} squares</span>` +
       `<span class="chip">Prints ${Math.round(mmW)} × ${Math.round(mmH)} mm</span>` +
@@ -640,14 +800,32 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   });
 
   // ---------- wiring ----------
-  monthSel.addEventListener("change", () => { st.month = +monthSel.value; $("title").placeholder = MONTHS[st.month]; applyPalette(); schedule(); });
+  monthSel.addEventListener("change", () => { st.month = +monthSel.value; $("title").placeholder = MONTHS[st.month]; st.bingo.color = BINGO_COLORS[st.month]; $("bingo-color").value = st.bingo.color; applyPalette(); buildBingo(); schedule(); });
   $("title").addEventListener("input", e => { st.title = e.target.value; schedule(); });
   const num = (id, lo, hi) => $(id).addEventListener("input", e => {
     const v = parseFloat(e.target.value);
     if (!isNaN(v)) { st[id] = Math.max(lo, Math.min(hi, v)); schedule(); }
   });
   num("cols", 6, 20); num("cell", 3, 8); num("rows", 4, 60);
-  for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
+  for (const k of ["blank", "dots", "outline", "showTitle", "showLegend", "cut", "bingoOn", "bingoFill"]) $(k).addEventListener("change", e => { st[k] = e.target.checked; schedule(); });
+  $("bingo-items").addEventListener("input", e => { st.bingo.items = e.target.value.split(/\r?\n/).map(t => t.trim()).filter(Boolean).slice(0, 24); buildBingo(); schedule(); });
+  $("bingo-free").addEventListener("input", e => { st.bingo.free = e.target.value; buildBingo(); schedule(); });
+  $("bingo-color").addEventListener("input", e => { st.bingo.color = e.target.value; buildBingo(); schedule(); });
+  $("bingo-shuffle").addEventListener("click", () => {
+    // squares keep their done marks as they move
+    const b = st.bingo, pairs = b.items.map((t, k) => [t, b.done[k < CENTER ? k : k + 1]]);
+    for (let k = pairs.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [pairs[k], pairs[j]] = [pairs[j], pairs[k]]; }
+    b.items = pairs.map(p => p[0]);
+    pairs.forEach((p, k) => { b.done[k < CENTER ? k : k + 1] = p[1]; });
+    $("bingo-items").value = b.items.join("\n");
+    buildBingo(); update();
+  });
+  $("copy-todo").addEventListener("click", () => {
+    const text = $("todo-text").value, msgBtn = $("copy-todo");
+    const shown = () => { msgBtn.textContent = "Copied"; setTimeout(() => { msgBtn.textContent = "Copy list"; }, 1500); };
+    const fallback = () => { const t = $("todo-text"); t.hidden = false; t.select(); msgBtn.textContent = "Select and copy the text below"; };
+    try { navigator.clipboard.writeText(text).then(shown, fallback); } catch (e) { fallback(); }
+  });
   $("shuffle").addEventListener("click", () => { st.seed = (st.seed % 100000) + 1 + Math.floor(Math.random() * 1000); update(); });
   $("resetColors").addEventListener("click", () => { applyPalette(); update(); });
   $("clear").addEventListener("click", () => { st.habits.forEach(h => { h.count = 0; }); st.example = false; buildHabits(); update(); });
@@ -659,6 +837,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 
   syncInputs();
   buildHabits();
+  buildBingo();
   update();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
 })();
