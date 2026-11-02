@@ -821,7 +821,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     const msg = $("parse-msg");
     msg.hidden = false;
     if (!total) { msg.textContent = "No checklist lines found. Each habit should be on its own line starting with \"- [ ]\"."; return; }
-    if (r.month >= 0 && r.month !== st.month) { st.month = r.month; st.title = ""; applyPalette(); }
+    if (r.month >= 0 && r.month !== st.month) { st.month = r.month; st.title = ""; st.bingo.color = BINGO_COLORS[r.month]; applyPalette(); buildBingo(); }
     st.habits.forEach((h, i) => { h.count = r.counts[i]; });
     st.example = false;
     const dim = new Date(now.getFullYear(), st.month + 1, 0).getDate();
