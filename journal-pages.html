@@ -98,6 +98,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .pages { display: flex; flex-direction: column; align-items: center; gap: 20px; width: max-content; margin: 0 auto; }
 @media (max-width: 640px) { .pages { zoom: 0.62; } }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
+.savebar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.saved { font-size: 13px; color: var(--muted); flex: 1 1 100%; }
+
 .sheet { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
 
 /* ---------- the printed journal page ---------- */
@@ -144,7 +147,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   @page { margin: 8mm; }
   .sheet { break-after: page; }
   .sheet:last-child { break-after: auto; }
-  body.two-up .sheet { display: flex; justify-content: center; align-items: center; gap: 12mm; width: 279mm; height: 215mm; margin: 0; }
+  body.two-up .sheet { display: flex; justify-content: center; align-items: center; gap: 12mm; width: 279mm; height: 200mm; margin: 0; overflow: hidden; }
   body { background: #fff; padding: 0; }
   .top, .controls, .stats, .hint { display: none !important; }
   .wrap, .layout { display: block; max-width: none; }
@@ -221,6 +224,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         <p class="note">120 × 175&nbsp;mm matches the habit board, and two fit side by side on a landscape 8.5 × 11 sheet. The dots are 5&nbsp;mm apart. Print at 100% scale.</p>
       </div>
 
+      <div class="group">
+        <h2>Save</h2>
+        <div class="savebar">
+          <button class="btn primary" id="save-now" type="button">Save</button>
+          <button class="btn" id="backup" type="button">Download backup</button>
+          <label class="btn" for="restore-file" style="display:inline-block">Restore backup</label>
+          <input type="file" id="restore-file" accept=".json,application/json" hidden>
+          <p class="saved" id="saved-msg" role="status"></p>
+        </div>
+        <p class="note">Everything saves in this browser on this device. A backup file lets you move it to another device or keep a copy before starting a new month.</p>
+      </div>
+
       <div class="actions">
         <button class="btn primary" id="print" type="button">Print pages</button>
       </div>
@@ -268,7 +283,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
       st = Object.assign(st, saved);
     }
   } catch (e) { /* storage unavailable */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const save = () => saveNow("Saved automatically");
+  // ---------- save + backup ----------
+  const stamp = () => new Date().toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
+  function showSaved(ok, how) {
+    $("saved-msg").textContent = ok ? `${how} ${stamp()} on ${location.host || "this device"}.` : "Couldn't save: this browser is blocking storage (private browsing?). Download a backup instead.";
+  }
+  function saveNow(how) {
+    let ok = true;
+    try { localStorage.setItem(KEY, JSON.stringify(st)); ok = JSON.parse(localStorage.getItem(KEY)) !== null; } catch (e) { ok = false; }
+    showSaved(ok, how);
+    return ok;
+  }
+  function downloadJson(name, data) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
 
   // Photos live in IndexedDB (too big for localStorage); kept in memory either way.
   const photos = new Map();
@@ -678,6 +712,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     buildEntries(); render();
   };
   $("print").onclick = () => window.print();
+  $("save-now").onclick = () => saveNow("Saved");
+  $("backup").onclick = () => {
+    // photos go in the backup too, so a restore on another device has them
+    const pics = {};
+    for (const en of st.entries) for (const im of en.images) if (photos.has(im.id)) pics[im.id] = photos.get(im.id);
+    downloadJson(`journal-pages-${new Date().toISOString().slice(0, 10)}.json`, { tool: "journal-pages", saved: new Date().toISOString(), state: st, photos: pics });
+  };
+  $("restore-file").onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(t => {
+      const d = JSON.parse(t);
+      if (!d.state || !Array.isArray(d.state.entries)) throw new Error("not a journal backup");
+      st = Object.assign(defaults(), d.state);
+      for (const [id, url] of Object.entries(d.photos || {})) putPhoto(id, url);
+      syncInputs(); swatchRow(); buildEntries(); render();
+      saveNow("Restored and saved");
+    }).catch(() => { $("saved-msg").textContent = "That file isn't a Journal Catch-Up backup."; });
+    e.target.value = "";
+  };
   let framed = true;
   try { framed = window.self !== window.top; } catch (e) {}
   if (framed) { $("print").hidden = true; $("frame-hint").hidden = false; }

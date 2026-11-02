@@ -106,6 +106,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   border-radius: 6px; min-height: 58px; padding: 4px; cursor: pointer; overflow-wrap: anywhere; min-width: 0;
 }
 .bingo-grid button[aria-pressed="true"] { background: var(--bingo); border-color: var(--bingo); color: #16161a; font-weight: 700; }
+.savebar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.saved { font-size: 13px; color: var(--muted); flex: 1 1 100%; }
 .todo { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
 
@@ -117,7 +119,9 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   .paper { background: none; box-shadow: none; padding: 0; display: block; }
   #board-svg, #bingo-svg { width: auto !important; height: auto !important; max-width: none; }
   .spread { display: block; }
-  body.two-up .spread { display: flex; justify-content: center; align-items: center; gap: 12mm; width: 279mm; height: 215mm; }
+  body.two-up .spread { display: flex; justify-content: center; align-items: center; gap: 12mm; width: 279mm; height: 200mm; }
+  html, body, .wrap, .layout, .preview { height: auto !important; margin: 0 !important; }
+  .preview > :not(.spread) { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 </style>
@@ -188,7 +192,9 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
         </div>
         <div class="actions">
           <button class="btn" id="bingo-shuffle" type="button">Shuffle squares</button>
+          <button class="btn" id="next-month" type="button">Start next month</button>
         </div>
+        <p class="note" id="next-msg" hidden></p>
       </div>
 
       <div class="group">
@@ -215,6 +221,18 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
           <label><input id="cut" type="checkbox"> Dashed cut line</label>
         </div>
         <p class="note">Your journal's dot grid is most likely 5&nbsp;mm. Print at 100% scale (not "fit to page") so the squares line up with the dots.</p>
+      </div>
+
+      <div class="group">
+        <h2>Save</h2>
+        <div class="savebar">
+          <button class="btn primary" id="save-now" type="button">Save</button>
+          <button class="btn" id="backup" type="button">Download backup</button>
+          <label class="btn" for="restore-file" style="display:inline-block">Restore backup</label>
+          <input type="file" id="restore-file" accept=".json,application/json" hidden>
+          <p class="saved" id="saved-msg" role="status"></p>
+        </div>
+        <p class="note">Everything saves in this browser on this device. A backup file lets you move it to another device or keep a copy before starting a new month.</p>
       </div>
 
       <div class="actions">
@@ -335,15 +353,18 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     let left = rem.reduce((a, b) => a + b, 0);
     let heights = Array(W).fill(0), holes = 0;
     const own = new Int8Array(W * (Math.ceil(left * 4 / W) + 60)).fill(-1);
-    const placed = [];
+    const placed = [], used = Array(7).fill(0), N = left;
     let last = -1;
     while (left > 0) {
-      const maxRem = Math.max(...rem);
+      const i = N - left;
       let best = null, bestS = -Infinity;
       for (let t = 0; t < 7; t++) {
         if (!rem[t]) continue;
-        // use up plentiful pieces first and avoid runs of one color
-        const bal = 1.6 * rem[t] / maxRem - (t === last ? 1.2 : 0);
+        // keep every habit on pace through the stack so rare pieces (books, movies) spread out,
+        // and avoid runs of one color
+        const lag = counts[t] * (i + 0.5) / N - used[t];
+        const ahead = used[t] + 1 - counts[t] * (i + 1) / N; // how far placing it now would run ahead
+        const bal = 2.2 * Math.max(-1.5, Math.min(1.5, lag)) - 14 * Math.max(0, ahead - 0.5) - (t === last ? 1.2 : 0);
         for (const rot of ROTS[t]) for (let x = 0; x <= W - rot.w; x++) {
           const r = evalMove(heights, rot, x, W);
           const s = r.score + bal - 2.5 * sameTouches(own, W, rot.cells, x, r.land, t) + rng() * noise;
@@ -353,7 +374,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       heights = best.r.nh; holes += best.r.holes;
       for (const [dx, dy] of best.rot.cells) own[(best.r.land + dy) * W + best.x + dx] = best.t;
       placed.push({ habit: best.t, cells: best.rot.cells.map(([dx, dy]) => [best.x + dx, best.r.land + dy]) });
-      rem[best.t]--; left--; last = best.t;
+      rem[best.t]--; used[best.t]++; left--; last = best.t;
     }
     return { placed, heights, holes };
   }
@@ -642,7 +663,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
       if (!st.bingo || !Array.isArray(st.bingo.done)) st.bingo = defaults().bingo;
     }
   } catch (e) { /* storage unavailable: start from defaults */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const save = () => saveNow("Saved automatically");
 
   const $ = id => document.getElementById(id);
   const monthSel = $("month");
@@ -741,6 +762,26 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
     save();
   }
 
+
+  // ---------- save + backup ----------
+  const stamp = () => new Date().toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
+  function showSaved(ok, how) {
+    $("saved-msg").textContent = ok ? `${how} ${stamp()} on ${location.host || "this device"}.` : "Couldn't save: this browser is blocking storage (private browsing?). Download a backup instead.";
+  }
+  function saveNow(how) {
+    let ok = true;
+    try { localStorage.setItem(KEY, JSON.stringify(st)); ok = JSON.parse(localStorage.getItem(KEY)) !== null; } catch (e) { ok = false; }
+    showSaved(ok, how);
+    return ok;
+  }
+  function downloadJson(name, data) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" }));
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
   // ---------- note parsing ----------
   const KEYWORDS = [/finish|book/i, /sleep/i, /walk|steps/i, /read/i, /gym|work\s*out/i, /family/i, /movie|film/i];
   function habitFor(item) {
@@ -830,6 +871,45 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   $("resetColors").addEventListener("click", () => { applyPalette(); update(); });
   $("clear").addEventListener("click", () => { st.habits.forEach(h => { h.count = 0; }); st.example = false; buildHabits(); update(); });
   $("print").addEventListener("click", () => window.print());
+  $("save-now").addEventListener("click", () => saveNow("Saved"));
+  const tag = () => `${(st.title || MONTHS[st.month]).toLowerCase().replace(/\s+/g, "-")}`;
+  $("backup").addEventListener("click", () => downloadJson(`habit-tetris-${tag()}.json`, { tool: "habit-tetris", saved: new Date().toISOString(), state: st }));
+  $("restore-file").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(t => {
+      const d = JSON.parse(t), s2 = d.state || d;
+      if (!s2 || !Array.isArray(s2.habits)) throw new Error("not a Habit Tetris backup");
+      st = Object.assign(defaults(), s2);
+      if (!st.bingo || !Array.isArray(st.bingo.done)) st.bingo = defaults().bingo;
+      syncInputs(); buildHabits(); buildBingo(); update();
+      saveNow("Restored and saved");
+    }).catch(() => { $("saved-msg").textContent = "That file isn't a Habit Tetris backup."; });
+    e.target.value = "";
+  });
+  // Start next month: unfinished squares carry over, counts reset. Needs a second tap.
+  let armed = 0;
+  $("next-month").addEventListener("click", () => {
+    const next = (st.month + 1) % 12, msg = $("next-msg");
+    if (Date.now() - armed > 6000) {
+      armed = Date.now();
+      msg.hidden = false;
+      msg.textContent = `This clears ${MONTHS[st.month]}: habit counts go to 0, finished bingo squares are removed and the unfinished ones carry over to ${MONTHS[next]}. Download a backup first if you want to keep ${MONTHS[st.month]}. Tap "Start next month" again to go ahead.`;
+      $("next-month").textContent = `Yes, start ${MONTHS[next]}`;
+      return;
+    }
+    armed = 0;
+    const b = st.bingo, carry = [];
+    for (let i = 0; i < 25; i++) if (i !== CENTER && !b.done[i] && squareText(b, i).trim()) carry.push(squareText(b, i));
+    st.month = next; st.title = ""; st.example = false; st.seed = 1;
+    st.habits.forEach(h => { h.count = 0; });
+    st.habits.forEach((h, i) => { h.color = PALETTES[next][i]; });
+    st.bingo = { items: carry, free: "", color: BINGO_COLORS[next], done: Array.from({ length: 25 }, (_, i) => i === CENTER) };
+    syncInputs(); buildHabits(); buildBingo(); update();
+    $("next-month").textContent = "Start next month";
+    msg.textContent = `Started ${MONTHS[next]} with ${carry.length} squares carried over. Add ${24 - carry.length} new ones and a free space.`;
+    saveNow("Saved");
+  });
 
   let framed = true;
   try { framed = window.self !== window.top; } catch (e) {}
