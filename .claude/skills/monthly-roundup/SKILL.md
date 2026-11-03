@@ -198,7 +198,19 @@ user attaches is appended with `--extra a.jpg b.jpg`. Downscale attachments to
 about 900px before passing them in, or the page balloons.
 
 **The shelf** only draws with three or more books — with two it is just the
-picks again.
+picks again. It runs as one line across the page, not down the work column:
+trapped there it forced the whole bottom row taller while the family column
+wasted the space.
+
+**A theme** (`"theme": "birthday"`) only ever draws decoration — bunting,
+confetti, a cake on the celebrations — and all of it is absolutely positioned
+in the page margins, so switching one on costs no layout height. Keep it that
+way: a theme must never push content around.
+
+**Workouts.** If a `workouts.csv` is attached it has a `type` column, so the
+strength and elliptical rows can be counted — October came to 15 distinct days
+against the 14 typed on the form. Close, but not close enough to overwrite
+what they counted. Keep using the form's number and offer the breakdown.
 
 ## 5. Make the PDF
 
@@ -280,6 +292,8 @@ up. Two things there are load-bearing:
 - `sizePhotos()` runs once immediately and again on `document.fonts.ready`.
   Measuring against fallback metrics pins the wrong height and the text
   reflows under it — that is a real bug, not belt-and-braces.
+- Nothing in a chart caption may name a month literally. It is built from
+  `DATA.month`; a hardcoded "Sept" shipped on the October page.
 - Colours used together must be checked together, not assumed from the set.
   `--cat6` plum against `--clay` measures deltaE 12.6 for normal vision — too
   close to ring two things on one chart — which is why `--purple` exists.

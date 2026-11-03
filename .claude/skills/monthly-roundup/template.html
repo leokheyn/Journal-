@@ -115,7 +115,7 @@ const DATA = {
     background-size:11.34px 11.34px;      /* a true 3mm dot grid */
     background-position:8px 8px;
     box-shadow:0 1px 2px rgba(0,0,0,.14), 0 10px 30px rgba(0,0,0,.18);
-    display:flex; flex-direction:column; gap:8px; overflow:hidden; position:relative;
+    display:flex; flex-direction:column; gap:7px; overflow:hidden; position:relative;
   }
   /* the UA's own margins on blockquote/figure would indent the quote and
      unbalance the photo columns — clear them before anything else */
@@ -125,6 +125,11 @@ const DATA = {
   /* hand-lettered banner caps between rules, the way a journal header is drawn */
   .masthead{ display:flex; flex-direction:column; gap:3px; }
   .masthead .hair{ height:1px; background:var(--ink); opacity:.8; }
+  /* decoration sits in the margins and is never part of the layout */
+  .deco{ position:absolute; pointer-events:none; z-index:0; }
+  .bunting{ top:7px; left:26px; }
+  .confetti{ top:0; left:0; }
+  .page > :not(.deco){ position:relative; z-index:1; }
   .masthead .dbl{ height:3px; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); }
   .masthead .title{ font-family:"Caveat",cursive; font-weight:700; font-size:30px;
                     line-height:1.04; text-align:center; text-transform:uppercase;
@@ -209,7 +214,7 @@ const DATA = {
   /* height is set in script, not by flex — see sizePhotos() */
   /* the strip: prints overlapping edge to edge, each tipped slightly */
   .photostrip{ display:flex; justify-content:center; align-items:stretch; margin-top:2px; }
-  .snap{ flex:1 1 0; min-width:0; background:#FFFDF8; padding:3px 3px 6px;
+  .snap{ flex:1 1 0; min-width:0; max-width:152px; background:#FFFDF8; padding:3px 3px 6px;
          box-shadow:0 1px 2.5px rgba(40,50,59,.28); display:flex; }
   .snap + .snap{ margin-left:-9px; }
   .snap img{ width:100%; height:100%; object-fit:cover; display:block; background:#EDE8DC; }
@@ -226,12 +231,12 @@ const DATA = {
                   border-color:transparent transparent var(--paper) transparent; }
 
   /* numbered highlights — a real list, so the numbers carry order, not decoration */
-  .hilites{ display:flex; flex-direction:column; gap:1.5px; }
+  .hilites{ display:flex; flex-direction:column; gap:1px; }
   .hilites > .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
                    text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
                    margin-bottom:1px; }
   .hl{ display:flex; gap:5px; align-items:baseline;
-       font-family:"Crimson Pro",Georgia,serif; font-size:9.4px; line-height:1.3; }
+       font-family:"Crimson Pro",Georgia,serif; font-size:9.1px; line-height:1.26; }
   .hl .hn{ flex:none; font-family:"Courier Prime",monospace; font-size:7px; font-weight:700;
            color:var(--marigold); width:7px; }
   .polaroid{ position:relative; background:#FFFDF8; padding:3.5px 3.5px 0;
@@ -251,19 +256,19 @@ const DATA = {
   .noshot{ width:100%; flex:1 1 auto; min-height:0; display:flex; align-items:center;
            justify-content:center; border:1px dashed var(--ink-faint); background:transparent; }
 
-  .fline{ font-family:"Crimson Pro",Georgia,serif; font-size:9.5px; line-height:1.34; }
+  .fline{ font-family:"Crimson Pro",Georgia,serif; font-size:9.2px; line-height:1.28; }
   .fline .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
                text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
                display:block; margin-bottom:1px; }
-  .celebrate{ display:flex; gap:5px; align-items:flex-start; margin-top:3px;
-              border-top:1px dashed var(--ink-faint); padding-top:5px; }
-  .celebrate .txt{ font-family:"Caveat",cursive; font-size:13px; line-height:1.2; color:var(--clay);
+  .celebrate{ display:flex; gap:5px; align-items:flex-start; margin-top:2px;
+              border-top:1px dashed var(--ink-faint); padding-top:4px; }
+  .celebrate .txt{ font-family:"Caveat",cursive; font-size:11.8px; line-height:1.18; color:var(--clay);
                    display:flex; flex-direction:column; gap:1px; }
 
   .wentry{ display:flex; gap:6px; align-items:flex-start; }
   .wentry .bullet{ flex:none; font-family:"Courier Prime",monospace; font-size:11px;
                    font-weight:700; line-height:1.22; width:10px; text-align:center; }
-  .wentry .body{ font-family:"Crimson Pro",Georgia,serif; font-size:9.5px; line-height:1.34; }
+  .wentry .body{ font-family:"Crimson Pro",Georgia,serif; font-size:9.2px; line-height:1.28; }
   .carries{ display:flex; flex-direction:column; gap:2px; }
   .carries > .lab{ font-family:"Courier Prime",monospace; font-size:6.8px; font-weight:700;
                    text-transform:uppercase; letter-spacing:.15em; color:var(--teal);
@@ -274,14 +279,18 @@ const DATA = {
   /* the shelf: every book of the month, best first. The colour chip is the
      same colour as that book's spine in the graphic above, which turns the
      spine drawing into a legend rather than decoration. */
-  .shelf{ margin-top:8px; border-top:1px dashed var(--ink-faint); padding-top:5px;
-          display:flex; flex-direction:column; gap:2.5px; }
-  .shelf-head{ font-size:6.8px; font-weight:700; text-transform:uppercase;
-               letter-spacing:.15em; color:var(--teal); margin-bottom:1px; }
-  .srow{ display:flex; align-items:center; gap:5px; }
+  /* one line across the page, not a column in the narrow work slot: trapped
+     there it forced the whole bottom row taller while family wasted the space */
+  .shelf{ border-top:1px dashed var(--ink-faint); padding-top:4px;
+          display:flex; flex-wrap:wrap; align-items:center; gap:3px 12px; }
+  .shelf-head{ flex:none; font-family:"Courier Prime",monospace; font-size:6.8px;
+               font-weight:700; text-transform:uppercase; letter-spacing:.15em;
+               color:var(--teal); }
+  .srow{ display:flex; align-items:center; gap:4px; min-width:0; flex:0 1 auto; }
+  .srow .st{ max-width:124px; }
   .srow i{ width:4.5px; height:9.5px; border-radius:1px; flex:none; opacity:.9; }
-  .srow .st{ flex:1; min-width:0; font-family:"Crimson Pro",Georgia,serif; font-size:8.7px;
-             line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  .srow .st{ flex:1; min-width:0; font-family:"Crimson Pro",Georgia,serif; font-size:8.5px;
+             line-height:1.22; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
              color:var(--ink); }
   .srow .ss{ flex:none; font-family:"Caveat",cursive; font-weight:700; font-size:12.5px;
              line-height:1; color:var(--marigold); font-variant-numeric:tabular-nums; }
@@ -569,7 +578,13 @@ const DATA = {
       stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 7.4 8 2.6l5.8 4.8"/><path d="M3.6 8.5v4.9h8.8V8.5"/><path d="M6.6 13.4v-3.2h2.8v3.2"/></svg>`,
     case:`<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="var(--teal)"
       stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5.2" width="12" height="8.2" rx="1.2"/><path d="M6 5.2V3.9c0-.5.4-.9.9-.9h2.2c.5 0 .9.4.9.9v1.3"/><path d="M2 8.8h12"/></svg>`,
-    star:`<svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><polygon points="7,1.2 8.6,5.1 12.8,5.4 9.6,8.1 10.6,12.2 7,9.9 3.4,12.2 4.4,8.1 1.2,5.4 5.4,5.1" fill="var(--clay)" opacity="0.9"/></svg>`
+    star:`<svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><polygon points="7,1.2 8.6,5.1 12.8,5.4 9.6,8.1 10.6,12.2 7,9.9 3.4,12.2 4.4,8.1 1.2,5.4 5.4,5.1" fill="var(--clay)" opacity="0.9"/></svg>`,
+    cake:`<svg viewBox="0 0 14 14" width="12.5" height="12.5" aria-hidden="true">
+      <ellipse cx="7" cy="1.9" rx="1" ry="1.4" fill="var(--marigold)"/>
+      <rect x="6.6" y="3.2" width=".9" height="2.1" fill="var(--ink-faint)"/>
+      <path d="M2.3 7.6 Q7 5.6 11.7 7.6 L11.7 11.5 Q7 12.4 2.3 11.5Z" fill="var(--clay)" opacity=".92"/>
+      <path d="M2.3 7.6 Q7 5.6 11.7 7.6" fill="none" stroke="var(--paper)" stroke-width=".9"/>
+    </svg>`
   };
   function photo(src, caption, alt){
     const inner = src
@@ -648,11 +663,54 @@ const DATA = {
   const highlights = (Array.isArray(f.highlights) ? f.highlights
     : String(f.highlights || "").split(/\r?\n+/)).map(t => String(t).trim()).filter(Boolean);
 
+  /* A theme is decoration only: everything it draws is absolutely positioned
+     in the page margins, so turning it on never pushes content around. */
+  const birthday = DATA.theme === "birthday";
+  const moShort = String(DATA.month || "").slice(0, 3);
+
+  function bunting(w, h){
+    const n = 12, sag = 3.4, fw = 8.4, fh = 7;
+    const yAt = t => (1 - t) * (1 - t) * 1 + 2 * (1 - t) * t * (1 + 2 * sag) + t * t * 1;
+    let flags = "";
+    for (let i = 0; i < n; i++){
+      const t = (i + 0.5) / n, x = t * w, y = yAt(t);
+      flags += `<path d="M${(x - fw / 2).toFixed(1)} ${y.toFixed(1)}
+        L${(x + fw / 2).toFixed(1)} ${y.toFixed(1)} L${x.toFixed(1)} ${(y + fh).toFixed(1)}Z"
+        fill="${PAL[i % PAL.length]}" opacity=".88"/>`;
+    }
+    return `<svg class="deco bunting" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">
+      <path d="M0 1 Q ${w / 2} ${(1 + 2 * sag).toFixed(1)} ${w} 1" fill="none"
+            stroke="var(--ink)" stroke-width=".8" opacity=".65"/>${flags}</svg>`;
+  }
+
+  /* scattered in the side and foot margins only — never over the content */
+  function confetti(){
+    const marks = [
+      [10, 92, 18], [14, 212, -24], [8, 330, 40], [15, 452, -12], [9, 556, 28],
+      [466, 120, -30], [461, 238, 16], [469, 352, -18], [462, 470, 34], [468, 588, -8],
+      [120, 659, 22], [240, 663, -14], [360, 658, 30], [44, 661, -26], [430, 655, 12],
+    ];
+    const bits = marks.map((m, i) => {
+      const [x, y, rot] = m, c = PAL[i % PAL.length];
+      if (i % 3 === 0)
+        return `<circle cx="${x}" cy="${y}" r="1.7" fill="${c}" opacity=".55"/>`;
+      if (i % 3 === 1)
+        return `<rect x="${x - 1.8}" y="${y - 3}" width="3.6" height="5.4" rx=".8" fill="${c}"
+          opacity=".5" transform="rotate(${rot} ${x} ${y})"/>`;
+      return `<path d="M${x - 3} ${y} q3 -3.4 6 0" fill="none" stroke="${c}" stroke-width="1.1"
+        opacity=".55" stroke-linecap="round" transform="rotate(${rot} ${x} ${y})"/>`;
+    }).join("");
+    return `<svg class="deco confetti" viewBox="0 0 480 672" width="480" height="672"
+      aria-hidden="true">${bits}</svg>`;
+  }
+
   const head = (icon, name) =>
     `<div class="sec-head">${icon}<span class="name">${name}</span><span class="rule"></span></div>`;
 
   document.getElementById("page").innerHTML = `
     ${DATA.sample ? `<div class="sample-note">sample month — yours will be real</div>` : ""}
+
+    ${birthday ? bunting(428, 12) + confetti() : ""}
 
     <div class="masthead">
       <div class="hair"></div>
@@ -699,8 +757,8 @@ const DATA = {
           ${stepsChart(h.stepSeries, Number(h.stepMean) || 0, 195, 46, h.marks || h.mark)}
         </figure>
         <figure class="ch">
-          <figcaption>Sleep by weekday<em>Sept nights &amp; median &middot; box = usual</em></figcaption>
-          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 88, h.sleepNotes)}
+          <figcaption>Sleep by weekday<em>${esc(moShort)} nights &amp; median &middot; box = usual</em></figcaption>
+          ${weekdayChart(h.weekday || [], h.weekdayBase || [], 220, 78, h.sleepNotes)}
         </figure>
       </div>` : ""}
 
@@ -725,7 +783,7 @@ const DATA = {
         ${highlights.length ? `<div class="hilites"><span class="lab">Highlights</span>
           ${highlights.map((t, i) => `<div class="hl"><span class="hn">${i + 1}</span>
             <span>${esc(t)}</span></div>`).join("")}</div>` : ""}
-        ${celebrations.length ? `<div class="celebrate">${ICON.star}<span class="txt"
+        ${celebrations.length ? `<div class="celebrate">${birthday ? ICON.cake : ICON.star}<span class="txt"
           >${celebrations.map(c => `<span>${esc(c)}</span>`).join("")}</span></div>` : ""}
       </section>
 
@@ -738,9 +796,11 @@ const DATA = {
           ${carriedClean.map(c => `<div class="wentry"><span class="bullet"
             style="color:var(--clay)">&gt;</span><span class="body">${esc(c)}</span></div>`).join("")}
         </div>` : ""}
-        ${(shelfRows && books.length >= 3) ? `<div class="shelf"><div class="shelf-head">The shelf</div>${shelfRows}</div>` : ""}
       </section>
     </div>
+
+    ${(shelfRows && books.length >= 3) ? `<div class="shelf">
+      <span class="shelf-head">The shelf</span>${shelfRows}</div>` : ""}
 
     <div class="foot">
       <span><b>&times;</b> done &nbsp;&nbsp; <b>&gt;</b> carried to next month</span>
