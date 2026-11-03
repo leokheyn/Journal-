@@ -254,6 +254,13 @@
     </div>
 
     <div class="f">
+      <label for="sticky">Note on the month's reading</label>
+      <textarea id="sticky" rows="2" placeholder="whatever the numbers don't say &mdash; a slow month, a book you abandoned, one you've just started"></textarea>
+      <span class="help">Prints as a sticky note in the corner of the reading section. Leave it
+        empty and the section closes up around it.</span>
+    </div>
+
+    <div class="f">
       <label for="quote">Favourite quote</label>
       <textarea id="quote" rows="2" placeholder="&ldquo;&hellip;&rdquo;"></textarea>
       <input type="text" id="quote-book" list="booklist" placeholder="which book it's from">
@@ -381,7 +388,7 @@
       saveTimer = null, loading = false, dirty = false;
 
   function blank(){
-    return { books:[], fav:"", favNote:"", least:"", leastNote:"", quote:"", quoteBook:"",
+    return { books:[], fav:"", favNote:"", least:"", leastNote:"", quote:"", quoteBook:"", sticky:"",
              gym:"",
              skill:"", highlights:"", celebration:"",
              win:"", carry:"" };
@@ -460,10 +467,10 @@
   }
 
   /* ---------- plain fields ---------- */
-  const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","gym","skill",
+  const FIELDS = ["fav","favNote","least","leastNote","quote","quoteBook","sticky","gym","skill",
                   "highlights","celebration","win","carry"];
   const EL = { fav:"fav", favNote:"fav-note", least:"least", leastNote:"least-note",
-               quote:"quote", quoteBook:"quote-book", gym:"gym", skill:"skill",
+               quote:"quote", quoteBook:"quote-book", sticky:"sticky", gym:"gym", skill:"skill",
                highlights:"highlights", celebration:"celebration",
                win:"win", carry:"carry" };
   FIELDS.forEach(k => {
