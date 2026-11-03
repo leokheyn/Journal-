@@ -229,7 +229,18 @@ node .claude/skills/monthly-roundup/to_pdf.js \
 ```
 
 The PDF centres the 5×7in page on US Letter with corner crop marks to trim
-against. Always run `check_fit.js` first — it renders with the real
+against. Pass `--in` twice to impose two months side by side on one landscape
+Letter sheet — useful when a month went unprinted:
+
+```bash
+node .claude/skills/monthly-roundup/to_pdf.js \
+  --in roundups/2026-09.html --in roundups/2026-10.html \
+  --out roundups/sept-oct-2026-pair.pdf
+```
+
+Each page goes in its own iframe there. Two of these documents cannot share a
+DOM — they both carry a `#page` and a script that reaches for it, so the second
+page's script would lay out the first. Always run `check_fit.js` first — it renders with the real
 typefaces, embedded from `node_modules`, because Google Fonts is unreachable
 here and the fallback serif has different metrics: a page can measure clean
 under the fallback and still clip in print.
