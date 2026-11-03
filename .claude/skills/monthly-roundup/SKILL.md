@@ -296,7 +296,14 @@ up. Two things there are load-bearing:
 - That chart scales to the baseline's reach, not to the month's extremes. One
   13-hour night would otherwise flatten every other weekday; anything above
   the top is pinned there and drawn as a caret.
-- `sizePhotos()` runs once immediately and again on `document.fonts.ready`.
+- Celebrations run on one line, stepped down from 11px until they fit, because
+  the text is whatever the month had to celebrate and no fixed size can promise
+  one line. Stacked, it was the tallest thing in the family column and the
+  photos paid for it: October's three went from a 53px stack to 20px, and the
+  photo strip grew from 71px to 99px.
+- `fitCelebration()` and `sizePhotos()` run once immediately and again on
+  `document.fonts.ready`, in that order — the celebration's height has to settle
+  before the leftover space is measured.
   Measuring against fallback metrics pins the wrong height and the text
   reflows under it — that is a real bug, not belt-and-braces.
 - Nothing in a chart caption may name a month literally. It is built from

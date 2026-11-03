@@ -262,8 +262,11 @@ const DATA = {
                display:block; margin-bottom:1px; }
   .celebrate{ display:flex; gap:5px; align-items:flex-start; margin-top:2px;
               border-top:1px dashed var(--ink-faint); padding-top:4px; }
-  .celebrate .txt{ font-family:"Caveat",cursive; font-size:11.8px; line-height:1.18; color:var(--clay);
-                   display:flex; flex-direction:column; gap:1px; }
+  /* one running line, not a stack: stacked, it was the tallest thing in the
+     family column and the photos paid for it */
+  .celebrate .txt{ font-family:"Caveat",cursive; font-size:11px; line-height:1.2; color:var(--clay);
+                   display:flex; flex-wrap:wrap; align-items:baseline; gap:0 4px; }
+  .celebrate .txt .sep{ font-style:normal; color:var(--ink-faint); }
 
   .wentry{ display:flex; gap:6px; align-items:flex-start; }
   .wentry .bullet{ flex:none; font-family:"Courier Prime",monospace; font-size:11px;
@@ -784,7 +787,7 @@ const DATA = {
           ${highlights.map((t, i) => `<div class="hl"><span class="hn">${i + 1}</span>
             <span>${esc(t)}</span></div>`).join("")}</div>` : ""}
         ${celebrations.length ? `<div class="celebrate">${birthday ? ICON.cake : ICON.star}<span class="txt"
-          >${celebrations.map(c => `<span>${esc(c)}</span>`).join("")}</span></div>` : ""}
+          >${celebrations.map((c, i) => `${i ? `<i class="sep">&middot;</i>` : ""}<span>${esc(c)}</span>`).join("")}</span></div>` : ""}
       </section>
 
       <section class="sec col">
@@ -813,6 +816,24 @@ const DATA = {
      layout resolves flex differently from its screen layout, so a page that
      measured clean in the browser could still clip when printed. Measuring
      once here and pinning the result makes both paths agree. */
+  /* Step the celebration down until it sits on one line. A fixed size can't
+     promise that: the text is whatever the month had to celebrate. */
+  function fitCelebration(){
+    const txt = document.querySelector(".celebrate .txt");
+    if (!txt || txt.children.length < 2) return;
+    const oneLine = () => {
+      const top = txt.children[0].getBoundingClientRect().top;
+      for (const k of txt.children)
+        if (Math.abs(k.getBoundingClientRect().top - top) > 0.6) return false;
+      return true;
+    };
+    for (const size of [11, 10.5, 10, 9.5, 9, 8.5]){
+      txt.style.fontSize = size + "px";
+      if (oneLine()) return;
+    }
+    txt.style.fontSize = "";      // too much to celebrate — let it wrap
+  }
+
   function sizePhotos(){
     const pageEl = document.getElementById("page");
     const strip = pageEl.querySelector(".photostrip");
@@ -841,8 +862,9 @@ const DATA = {
   /* Once now so the first paint is sane, and again when the webfonts land:
      measuring against fallback metrics pins the wrong height, and the text
      reflows under it. */
-  sizePhotos();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizePhotos);
+  function layout(){ fitCelebration(); sizePhotos(); }
+  layout();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
 
   const title = `${DATA.month} ${DATA.year} Roundup`;
   document.title = title;
