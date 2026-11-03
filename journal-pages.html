@@ -124,6 +124,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .blk .arrow { padding-left: 9mm; text-indent: -9mm; }
 .blk .arrow::before { content: "\27F6"; display: inline-block; width: 9mm; text-indent: 0; }
 .tag { margin: 1.5mm 0 4.5mm; display: flex; align-items: center; gap: 4mm; }
+.tag.has-pic { display: block; }
+.tag .sticker-pic { float: right; width: 26mm; margin: -3mm 0 -6mm 3mm; transform: rotate(6deg); position: relative; z-index: 1; }
 .tag .sticker { flex: none; display: block; width: 34mm; height: 13mm; transform: rotate(-4deg); }
 .tag > span {
   position: relative; display: inline-block; font-size: 5.2mm; line-height: 1;
@@ -482,6 +484,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
           <div class="row">
             <label>Date tag <input type="text" id="tag-${en.id}" value="${esc(en.tag)}"></label>
             <label>Sticker <input type="text" id="stk-${en.id}" maxlength="16" placeholder="e.g. Happy 33rd!" value="${esc(en.sticker || "")}"></label>
+          </div>
+          <div class="actions">
+            <label class="btn small" for="stkpic-${en.id}">${photos.has("sticker-" + en.id) ? "Change sticker picture" : "Add sticker picture"}</label>
+            <input type="file" accept="image/*" hidden id="stkpic-${en.id}">
+            ${photos.has("sticker-" + en.id) ? `<button class="btn small" type="button" id="stkclr-${en.id}">Remove sticker picture</button>` : ""}
             <label style="flex:0 0 auto">Color <input type="color" id="col-${en.id}" value="${en.color}"></label>
           </div>
           <label class="note" for="txt-${en.id}">Text</label>
@@ -495,6 +502,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
       box.appendChild(d);
       $("tag-" + en.id).oninput = e => { en.tag = e.target.value; d.querySelector(".chip").textContent = en.tag; schedule(); };
       $("stk-" + en.id).oninput = e => { en.sticker = e.target.value; schedule(); };
+      $("stkpic-" + en.id).onchange = e => loadPhoto(e.target.files[0], "sticker-" + en.id, true);
+      if ($("stkclr-" + en.id)) $("stkclr-" + en.id).onclick = () => { photos.delete("sticker-" + en.id); try { db && db.transaction("photos", "readwrite").objectStore("photos").delete("sticker-" + en.id); } catch (e) {} buildEntries(); render(); };
       $("col-" + en.id).oninput = e => { en.color = e.target.value; d.querySelector(".chip").style.background = en.color; schedule(); };
       $("txt-" + en.id).oninput = e => { en.text = e.target.value; schedule(); };
       $("addimg-" + en.id).onclick = () => { en.images.push({ id: uid(), caption: "Photo", kind: "photo", para: 1, side: "right", w: 6, h: 8 }); buildEntries(); render(); };
@@ -533,7 +542,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     });
   }
 
-  function loadPhoto(file, id) {
+  // Sticker pictures: the plain background around the die-cut edge becomes transparent.
+  function clearBackground(cv) {
+    const ctx = cv.getContext("2d"), { width: w, height: h } = cv;
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    const at = (x, y) => (y * w + x) * 4;
+    const c0 = at(0, 0), ref = [d[c0], d[c0 + 1], d[c0 + 2]];
+    const near = i => Math.abs(d[i] - ref[0]) + Math.abs(d[i + 1] - ref[1]) + Math.abs(d[i + 2] - ref[2]) < 30;
+    const seen = new Uint8Array(w * h), stack = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]];
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (x < 0 || y < 0 || x >= w || y >= h || seen[y * w + x]) continue;
+      seen[y * w + x] = 1;
+      const i = at(x, y);
+      if (!near(i)) continue;
+      d[i + 3] = 0;
+      stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function loadPhoto(file, id, sticker) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -544,7 +573,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         const cv = document.createElement("canvas");
         cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
         cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-        putPhoto(id, cv.toDataURL("image/jpeg", 0.88));
+        if (sticker) clearBackground(cv);
+        putPhoto(id, sticker ? cv.toDataURL("image/png") : cv.toDataURL("image/jpeg", 0.88));
         buildEntries(); render();
       };
       img.src = reader.result;
@@ -592,7 +622,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     const blocks = [];
     const tag = document.createElement("div");
     tag.className = "tag";
-    tag.innerHTML = `<span style="--tag:${en.color}">${esc(en.tag)}</span>` + (en.sticker ? stickerSvg(en.sticker, en.color) : "");
+    const pic = photos.get("sticker-" + en.id);
+    if (pic) {
+      // a picture sticker hangs off the right of the tag line and the first paragraph wraps around it
+      tag.className = "tag has-pic";
+      tag.innerHTML = `<img class="sticker-pic" src="${pic}" alt="">` + `<span style="--tag:${en.color}">${esc(en.tag)}</span>`;
+    } else tag.innerHTML = `<span style="--tag:${en.color}">${esc(en.tag)}</span>` + (en.sticker ? stickerSvg(en.sticker, en.color) : "");
     blocks.push(tag);
     const paras = en.text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     const n = Math.max(1, paras.length);
@@ -740,7 +775,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   $("backup").onclick = () => {
     // photos go in the backup too, so a restore on another device has them
     const pics = {};
-    for (const en of st.entries) for (const im of en.images) if (photos.has(im.id)) pics[im.id] = photos.get(im.id);
+    for (const en of st.entries) {
+      for (const im of en.images) if (photos.has(im.id)) pics[im.id] = photos.get(im.id);
+      if (photos.has("sticker-" + en.id)) pics["sticker-" + en.id] = photos.get("sticker-" + en.id);
+    }
     downloadJson(`journal-pages-${new Date().toISOString().slice(0, 10)}.json`, { tool: "journal-pages", saved: new Date().toISOString(), state: st, photos: pics });
   };
   $("restore-file").onchange = e => {
