@@ -123,8 +123,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .blk p { margin: 0; }
 .blk .arrow { padding-left: 9mm; text-indent: -9mm; }
 .blk .arrow::before { content: "\27F6"; display: inline-block; width: 9mm; text-indent: 0; }
-.tag { margin: 1.5mm 0 4.5mm; }
-.tag span {
+.tag { margin: 1.5mm 0 4.5mm; display: flex; align-items: center; gap: 4mm; }
+.tag .sticker { flex: none; display: block; width: 34mm; height: 13mm; transform: rotate(-4deg); }
+.tag > span {
   position: relative; display: inline-block; font-size: 5.2mm; line-height: 1;
   padding: 1.6mm 4mm; color: #16161a; letter-spacing: 0.04em; z-index: 0;
 }
@@ -480,6 +481,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         <div class="entry-body">
           <div class="row">
             <label>Date tag <input type="text" id="tag-${en.id}" value="${esc(en.tag)}"></label>
+            <label>Sticker <input type="text" id="stk-${en.id}" maxlength="16" placeholder="e.g. Happy 33rd!" value="${esc(en.sticker || "")}"></label>
             <label style="flex:0 0 auto">Color <input type="color" id="col-${en.id}" value="${en.color}"></label>
           </div>
           <label class="note" for="txt-${en.id}">Text</label>
@@ -492,6 +494,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         </div>`;
       box.appendChild(d);
       $("tag-" + en.id).oninput = e => { en.tag = e.target.value; d.querySelector(".chip").textContent = en.tag; schedule(); };
+      $("stk-" + en.id).oninput = e => { en.sticker = e.target.value; schedule(); };
       $("col-" + en.id).oninput = e => { en.color = e.target.value; d.querySelector(".chip").style.background = en.color; schedule(); };
       $("txt-" + en.id).oninput = e => { en.text = e.target.value; schedule(); };
       $("addimg-" + en.id).onclick = () => { en.images.push({ id: uid(), caption: "Photo", kind: "photo", para: 1, side: "right", w: 6, h: 8 }); buildEntries(); render(); };
@@ -567,11 +570,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     }).join("");
   }
 
+  // A die-cut birthday-style sticker beside the date tag: a little cake and the sticker text.
+  function stickerSvg(text, color) {
+    const t = esc(text.length > 16 ? text.slice(0, 16) : text);
+    const fs = text.length > 11 ? 3.3 : 4;
+    return `<svg class="sticker" viewBox="0 0 34 13" aria-hidden="true">
+      <rect x="0.4" y="0.4" width="33.2" height="12.2" rx="6.1" fill="#ffffff" stroke="#d9d9de" stroke-width="0.4"/>
+      <rect x="1.3" y="1.3" width="31.4" height="10.4" rx="5.2" fill="#f7b3c6"/>
+      <circle cx="12" cy="2.9" r="0.55" fill="#3fbca4"/><circle cx="18.5" cy="10.2" r="0.5" fill="#b25bd6"/><circle cx="26" cy="2.8" r="0.5" fill="#f59a55"/><circle cx="30.6" cy="9.4" r="0.5" fill="#3fbca4"/><rect x="22" y="9.6" width="1.4" height="0.5" rx="0.25" fill="#f2b705" transform="rotate(25 22.7 9.85)"/>
+      <g transform="translate(3.2 2.2)">
+        <rect x="0.6" y="4.6" width="6.4" height="3.6" rx="0.6" fill="#fdf3e6" stroke="#1d1d22" stroke-width="0.35"/>
+        <path d="M0.6 5.9 q0.8 0.9 1.6 0 t1.6 0 t1.6 0 t1.6 0" fill="none" stroke="#e8697f" stroke-width="0.45"/>
+        <rect x="1.9" y="2.6" width="0.7" height="2" fill="#3fbca4"/><rect x="3.45" y="2.6" width="0.7" height="2" fill="#b25bd6"/><rect x="5" y="2.6" width="0.7" height="2" fill="#f59a55"/>
+        <path d="M2.25 2.5 q-0.5 -0.7 0 -1.4 q0.5 0.7 0 1.4z M3.8 2.5 q-0.5 -0.7 0 -1.4 q0.5 0.7 0 1.4z M5.35 2.5 q-0.5 -0.7 0 -1.4 q0.5 0.7 0 1.4z" fill="#f2b705"/>
+      </g>
+      <text x="21.6" y="7.9" text-anchor="middle" font-family="Bungee, 'Arial Black', sans-serif" font-size="${fs}" fill="#16161a" textLength="${Math.min(19.5, text.length * fs * 0.62)}" lengthAdjust="spacingAndGlyphs">${t}</text>
+    </svg>`;
+  }
+
   function entryBlocks(en) {
     const blocks = [];
     const tag = document.createElement("div");
     tag.className = "tag";
-    tag.innerHTML = `<span style="--tag:${en.color}">${esc(en.tag)}</span>`;
+    tag.innerHTML = `<span style="--tag:${en.color}">${esc(en.tag)}</span>` + (en.sticker ? stickerSvg(en.sticker, en.color) : "");
     blocks.push(tag);
     const paras = en.text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
     const n = Math.max(1, paras.length);
