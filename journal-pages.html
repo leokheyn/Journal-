@@ -384,7 +384,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         }
         continue;
       }
-      const inc = line.match(/^\(\s*(?:include|insert)\b([^)]*)\)?\s*$/i);
+      const inc = line.match(/^\(\s*(?:include|insert)\b([^)]*)\)?[\s.,!]*$/i);
       if (inc) { addPhotos(cur, inc[1], cur.paras.length); continue; }
       const sub = line.match(/^(?:[-*•]|->|→)\s*(.+)$/);
       if (sub && cur.paras.length) { cur.paras[cur.paras.length - 1] += "\n-> " + sub[1]; continue; }
