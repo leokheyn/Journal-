@@ -194,8 +194,15 @@ python3 .claude/skills/monthly-roundup/build.py \
 ```
 
 **Photos** are one strip. The two from the form come first; anything else the
-user attaches is appended with `--extra a.jpg b.jpg`. Downscale attachments to
-about 900px before passing them in, or the page balloons.
+user attaches is appended with `--extra a.jpg b.jpg`. To use a different image
+in place of one the form holds, keeping its position, pass
+`--replace lilah=better.jpg` — never edit their stored photo.
+
+Downscale attachments to about 900px before passing them in, or the page
+balloons. **Crop them yourself to roughly the slot's shape** (about 2.3:1) with
+the people framed: the strip uses `object-fit: cover`, so handing it an uncropped
+portrait lets the browser centre-crop it and take heads off. Look at the crop
+before building, and look at the strip in the rendered PDF after.
 
 **The shelf** only draws with three or more books — with two it is just the
 picks again. It runs as one line across the page, not down the work column:

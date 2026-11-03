@@ -72,6 +72,9 @@ def main():
     ap.add_argument("--health", default="", help="JSON from health.py, if the month has an export")
     ap.add_argument("--extra", nargs="*", default=[],
                     help="extra image files to append to the photo strip")
+    ap.add_argument("--replace", nargs="*", default=[], metavar="SLOT=FILE",
+                    help="use a local image in place of a form photo, keeping its "
+                         "position in the strip (e.g. --replace lilah=better.jpg)")
     ap.add_argument("--key", required=True, help="month key, e.g. 2026-09")
     ap.add_argument("--out", required=True, help="path to write the finished page to")
     args = ap.parse_args()
@@ -110,9 +113,26 @@ def main():
     # Photos become one ordered strip. The two the form collects come first,
     # then any extras handed in on the command line. Everything is embedded as
     # a data URI so the page stays self-contained.
+    def embed(path):
+        path = pathlib.Path(path)
+        mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
+        return "data:%s;base64,%s" % (mime, base64.b64encode(path.read_bytes()).decode())
+
+    swaps = {}
+    for pair in args.replace or []:
+        slot, _, file = pair.partition("=")
+        if not file or not pathlib.Path(file).exists():
+            raise SystemExit(f"--replace needs SLOT=FILE with a file that exists: {pair!r}")
+        swaps[slot] = file
+
     family = data.setdefault("family", {})
     shots = []
     for slot in ("lilah", "activity"):
+        if slot in swaps:
+            src = embed(swaps[slot])
+            shots.append({"src": src, "alt": f"Photo from this month ({slot})"})
+            print(f"  {slot}: {len(src) // 1024} KB from {pathlib.Path(swaps[slot]).name} (replaces the form's)")
+            continue
         src = load_photo(args.photos, args.key, slot)
         if src:
             shots.append({"src": src, "alt": f"Photo from the form ({slot})"})
@@ -124,10 +144,9 @@ def main():
         if not path.exists():
             print(f"  ! missing extra photo {extra}", file=sys.stderr)
             continue
-        mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"
-        b64 = base64.b64encode(path.read_bytes()).decode()
-        shots.append({"src": f"data:{mime};base64,{b64}", "alt": path.stem})
-        print(f"  extra: {path.name}, {len(b64) // 1024} KB")
+        src = embed(path)
+        shots.append({"src": src, "alt": path.stem})
+        print(f"  extra: {path.name}, {len(src) // 1024} KB")
     if shots:
         family["photos"] = shots
 
