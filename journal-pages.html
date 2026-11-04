@@ -78,6 +78,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .btn.small { padding: 7px 10px; font-size: 13px; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
+.marker-rows { display: grid; gap: 6px; }
+.marker-rows label { display: grid; grid-template-columns: 82px minmax(0, 1fr) 40px; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .swatch[aria-pressed="true"] { border-color: var(--fg); }
@@ -198,14 +200,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
       <div class="group">
         <h2>Tag colors</h2>
         <p class="note">Weekdays go through these four in order and start over. Saturday and Sunday are combined into one entry with the weekend color.</p>
-        <div class="swatches">
-          <input type="color" id="rot-0" aria-label="Weekday color 1">
-          <input type="color" id="rot-1" aria-label="Weekday color 2">
-          <input type="color" id="rot-2" aria-label="Weekday color 3">
-          <input type="color" id="rot-3" aria-label="Weekday color 4">
-          <span class="note" style="margin-left:8px">Weekend</span>
-          <input type="color" id="weekend" aria-label="Weekend color">
+        <div class="marker-rows">
+          <label>Weekday 1 <select class="marker" data-for="rot-0"></select><input type="color" id="rot-0" aria-label="Weekday color 1"></label>
+          <label>Weekday 2 <select class="marker" data-for="rot-1"></select><input type="color" id="rot-1" aria-label="Weekday color 2"></label>
+          <label>Weekday 3 <select class="marker" data-for="rot-2"></select><input type="color" id="rot-2" aria-label="Weekday color 3"></label>
+          <label>Weekday 4 <select class="marker" data-for="rot-3"></select><input type="color" id="rot-3" aria-label="Weekday color 4"></label>
+          <label>Weekend <select class="marker" data-for="weekend"></select><input type="color" id="weekend" aria-label="Weekend color"></label>
         </div>
+        <p class="note">Pick one of your highlighters by name, or use the color square for anything else.</p>
       </div>
 
       <div class="group">
@@ -263,6 +265,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   const uid = () => Math.random().toString(36).slice(2, 10);
   const DAY_LETTER = ["Su", "M", "T", "W", "Th", "F", "S"];
   const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+  // The highlighters you own, sampled from their swatch cards.
+  const MARKERS = [
+    ["Dark Gray", "#616161"], ["Cool Gray", "#a9aaac"], ["Brown", "#987362"], ["Fuchsia", "#b7419c"],
+    ["Magenta", "#aa509e"], ["Violet", "#c4a7df"], ["Lavender", "#5747b5"], ["Pink", "#fdb9cb"],
+    ["Cyan", "#298fc9"], ["Blue", "#a9dee4"], ["Smoke Blue", "#8abfc7"], ["Summer Green", "#28afa8"],
+    ["Green", "#94bd43"], ["Lemon Yellow", "#fbed2c"], ["Gold", "#d9b022"], ["Apricot", "#f28225"],
+    ["Vermilion", "#da8560"], ["Red", "#d63358"],
+  ];
+  // fill every highlighter menu and keep it in step with its color square
+  function wireMarkers(root) {
+    root.querySelectorAll("select.marker").forEach(sel => {
+      const input = document.getElementById(sel.dataset.for);
+      if (!input) return;
+      sel.innerHTML = `<option value="">Custom color</option>` + MARKERS.map(([n, h]) => `<option value="${h}">\u25A0 ${n}</option>`).join("");
+      const sync = () => { const v = input.value.toLowerCase(); sel.value = MARKERS.some(m => m[1] === v) ? v : ""; sel.style.color = sel.value || ""; };
+      sync();
+      input.addEventListener("input", sync);
+      sel.onchange = () => { if (!sel.value) return; input.value = sel.value; sel.style.color = sel.value; input.dispatchEvent(new Event("input")); };
+    });
+  }
 
   // ---------- state ----------
   const KEY = "journal-pages-v1";
@@ -489,6 +512,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             <label class="btn small" for="stkpic-${en.id}">${photos.has("sticker-" + en.id) ? "Change sticker picture" : "Add sticker picture"}</label>
             <input type="file" accept="image/*" hidden id="stkpic-${en.id}">
             ${photos.has("sticker-" + en.id) ? `<button class="btn small" type="button" id="stkclr-${en.id}">Remove sticker picture</button>` : ""}
+            <label>Highlighter <select class="marker" data-for="col-${en.id}"></select></label>
             <label style="flex:0 0 auto">Color <input type="color" id="col-${en.id}" value="${en.color}"></label>
           </div>
           <label class="note" for="txt-${en.id}">Text</label>
@@ -500,6 +524,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
           </div>
         </div>`;
       box.appendChild(d);
+      wireMarkers(d);
       $("tag-" + en.id).oninput = e => { en.tag = e.target.value; d.querySelector(".chip").textContent = en.tag; schedule(); };
       $("stk-" + en.id).oninput = e => { en.sticker = e.target.value; schedule(); };
       $("stkpic-" + en.id).onchange = e => loadPhoto(e.target.files[0], "sticker-" + en.id, true);
@@ -798,7 +823,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   try { framed = window.self !== window.top; } catch (e) {}
   if (framed) { $("print").hidden = true; $("frame-hint").hidden = false; }
 
-  syncInputs(); swatchRow(); buildEntries(); render();
+  syncInputs(); swatchRow(); buildEntries(); render(); wireMarkers(document);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 })();
 </script>
