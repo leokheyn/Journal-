@@ -79,7 +79,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .marker-rows { display: grid; gap: 6px; }
-.marker-rows label { display: grid; grid-template-columns: 82px minmax(0, 1fr) 40px; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.marker-rows .mrow { display: grid; grid-template-columns: 82px minmax(0, 1fr) 40px; gap: 8px; align-items: start; font-size: 13px; color: var(--muted); }
+.marker-rows .mrow > span:first-child { padding-top: 8px; }
+.mk { min-width: 0; }
+.mk-btn { width: 100%; display: flex; align-items: center; gap: 8px; font: 14px var(--font-body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; cursor: pointer; text-align: left; }
+.mk-btn .mk-name { flex: 1; min-width: 0; }
+.mk-dot { width: 18px; height: 18px; border-radius: 4px; flex: none; background: var(--c, transparent); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.mk-custom { background: conic-gradient(#d63358, #f28225, #fbed2c, #94bd43, #28afa8, #298fc9, #5747b5, #aa509e, #d63358); }
+.mk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 4px; margin-top: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.mk-grid[hidden] { display: none; }
+.mk-grid button { display: flex; align-items: center; gap: 6px; font: 13px var(--font-body); color: var(--fg); background: none; border: 1px solid transparent; border-radius: 6px; padding: 5px 6px; cursor: pointer; text-align: left; }
+.mk-grid button:hover { border-color: var(--line); }
+.mk-grid button[aria-pressed="true"] { border-color: var(--accent); }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .swatch[aria-pressed="true"] { border-color: var(--fg); }
@@ -201,11 +212,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
         <h2>Tag colors</h2>
         <p class="note">Weekdays go through these four in order and start over. Saturday and Sunday are combined into one entry with the weekend color.</p>
         <div class="marker-rows">
-          <label>Weekday 1 <select class="marker" data-for="rot-0"></select><input type="color" id="rot-0" aria-label="Weekday color 1"></label>
-          <label>Weekday 2 <select class="marker" data-for="rot-1"></select><input type="color" id="rot-1" aria-label="Weekday color 2"></label>
-          <label>Weekday 3 <select class="marker" data-for="rot-2"></select><input type="color" id="rot-2" aria-label="Weekday color 3"></label>
-          <label>Weekday 4 <select class="marker" data-for="rot-3"></select><input type="color" id="rot-3" aria-label="Weekday color 4"></label>
-          <label>Weekend <select class="marker" data-for="weekend"></select><input type="color" id="weekend" aria-label="Weekend color"></label>
+          <div class="mrow"><span>Weekday 1</span> <select class="marker" data-for="rot-0"></select><input type="color" id="rot-0" aria-label="Weekday color 1"></div>
+          <div class="mrow"><span>Weekday 2</span> <select class="marker" data-for="rot-1"></select><input type="color" id="rot-1" aria-label="Weekday color 2"></div>
+          <div class="mrow"><span>Weekday 3</span> <select class="marker" data-for="rot-2"></select><input type="color" id="rot-2" aria-label="Weekday color 3"></div>
+          <div class="mrow"><span>Weekday 4</span> <select class="marker" data-for="rot-3"></select><input type="color" id="rot-3" aria-label="Weekday color 4"></div>
+          <div class="mrow"><span>Weekend</span> <select class="marker" data-for="weekend"></select><input type="color" id="weekend" aria-label="Weekend color"></div>
         </div>
         <p class="note">Pick one of your highlighters by name, or use the color square for anything else.</p>
       </div>
@@ -274,16 +285,36 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     ["Green", "#94bd43"], ["Lemon Yellow", "#fbed2c"], ["Gold", "#d9b022"], ["Apricot", "#f28225"],
     ["Vermilion", "#da8560"], ["Red", "#d63358"],
   ];
-  // fill every highlighter menu and keep it in step with its color square
+  // Turn each highlighter menu into a button that opens a grid of real color swatches
+  // (iPhone menus can't show colors), kept in step with its color square.
   function wireMarkers(root) {
     root.querySelectorAll("select.marker").forEach(sel => {
       const input = document.getElementById(sel.dataset.for);
       if (!input) return;
-      sel.innerHTML = `<option value="">Custom color</option>` + MARKERS.map(([n, h]) => `<option value="${h}">\u25A0 ${n}</option>`).join("");
-      const sync = () => { const v = input.value.toLowerCase(); sel.value = MARKERS.some(m => m[1] === v) ? v : ""; sel.style.color = sel.value || ""; };
+      const wrap = document.createElement("div");
+      wrap.className = "mk";
+      wrap.innerHTML = `<button type="button" class="mk-btn" aria-expanded="false"><span class="mk-dot"></span><span class="mk-name"></span><span aria-hidden="true">\u25BE</span></button>
+        <div class="mk-grid" hidden>${MARKERS.map(([n, h]) => `<button type="button" data-hex="${h}" style="--c:${h}"><span class="mk-dot"></span>${n}</button>`).join("")}
+        <button type="button" data-custom="1"><span class="mk-dot mk-custom"></span>Custom color</button></div>`;
+      sel.replaceWith(wrap);
+      const btn = wrap.querySelector(".mk-btn"), grid = wrap.querySelector(".mk-grid");
+      const sync = () => {
+        const v = input.value.toLowerCase(), m = MARKERS.find(x => x[1] === v);
+        btn.querySelector(".mk-dot").style.background = v;
+        btn.querySelector(".mk-name").textContent = m ? m[0] : "Custom color";
+        grid.querySelectorAll("[data-hex]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.hex === v)));
+      };
       sync();
       input.addEventListener("input", sync);
-      sel.onchange = () => { if (!sel.value) return; input.value = sel.value; sel.style.color = sel.value; input.dispatchEvent(new Event("input")); };
+      btn.onclick = () => { grid.hidden = !grid.hidden; btn.setAttribute("aria-expanded", String(!grid.hidden)); };
+      grid.onclick = e => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        grid.hidden = true; btn.setAttribute("aria-expanded", "false");
+        if (b.dataset.custom) { input.click(); return; }
+        input.value = b.dataset.hex;
+        input.dispatchEvent(new Event("input"));
+      };
     });
   }
 
@@ -512,7 +543,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
             <label class="btn small" for="stkpic-${en.id}">${photos.has("sticker-" + en.id) ? "Change sticker picture" : "Add sticker picture"}</label>
             <input type="file" accept="image/*" hidden id="stkpic-${en.id}">
             ${photos.has("sticker-" + en.id) ? `<button class="btn small" type="button" id="stkclr-${en.id}">Remove sticker picture</button>` : ""}
-            <label>Highlighter <select class="marker" data-for="col-${en.id}"></select></label>
+            <label style="flex-basis:100%">Highlighter <select class="marker" data-for="col-${en.id}"></select></label>
             <label style="flex:0 0 auto">Color <input type="color" id="col-${en.id}" value="${en.color}"></label>
           </div>
           <label class="note" for="txt-${en.id}">Text</label>
